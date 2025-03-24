@@ -26,7 +26,7 @@ func NewClient(handler xcommon.IHandler) *Client {
 // Connect 连接
 //
 //	每个连接有 一个 发送协程, 一个 接收协程
-func (p *Client) Connect(ctx context.Context, opts ...*clientOptions) error {
+func (p *Client) Connect(ctx context.Context, opts ...*ClientOptions) error {
 	newOpts := mergeClientOptions(opts...)
 	if err := clientConfigure(newOpts); err != nil {
 		return errors.WithMessage(err, xruntime.Location())
