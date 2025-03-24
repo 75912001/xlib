@@ -7,9 +7,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-// clientOptions contains options to configure a Server instance. Each option can be set through setter functions. See
+// ClientOptions contains options to configure a Server instance. Each option can be set through setter functions. See
 // documentation for each setter function for an explanation of the option.
-type clientOptions struct {
+type ClientOptions struct {
 	serverAddress    *string            // 服务端的地址 e.g.:127.0.0.1:8787
 	eventChan        chan<- interface{} // 外部传递的事件处理管道.连接的事件会放入该管道,以供外部处理
 	sendChanCapacity *uint32            // 发送管道容量
@@ -17,8 +17,8 @@ type clientOptions struct {
 }
 
 // NewClientOptions 新的ClientOptions
-func NewClientOptions() *clientOptions {
-	return &clientOptions{
+func NewClientOptions() *ClientOptions {
+	return &ClientOptions{
 		serverAddress:    nil,
 		eventChan:        nil,
 		sendChanCapacity: nil,
@@ -26,35 +26,35 @@ func NewClientOptions() *clientOptions {
 	}
 }
 
-func (p *clientOptions) WithReadBuffer(readBuffer int) *clientOptions {
+func (p *ClientOptions) WithReadBuffer(readBuffer int) *ClientOptions {
 	p.connOptions.ReadBuffer = &readBuffer
 	return p
 }
 
-func (p *clientOptions) WithWriteBuffer(writeBuffer int) *clientOptions {
+func (p *ClientOptions) WithWriteBuffer(writeBuffer int) *ClientOptions {
 	p.connOptions.WriteBuffer = &writeBuffer
 	return p
 }
 
-func (p *clientOptions) WithAddress(address string) *clientOptions {
+func (p *ClientOptions) WithAddress(address string) *ClientOptions {
 	p.serverAddress = &address
 	return p
 }
 
-func (p *clientOptions) WithEventChan(eventChan chan<- interface{}) *clientOptions {
+func (p *ClientOptions) WithEventChan(eventChan chan<- interface{}) *ClientOptions {
 	p.eventChan = eventChan
 	return p
 }
 
-func (p *clientOptions) WithSendChanCapacity(sendChanCapacity uint32) *clientOptions {
+func (p *ClientOptions) WithSendChanCapacity(sendChanCapacity uint32) *ClientOptions {
 	p.sendChanCapacity = &sendChanCapacity
 	return p
 }
 
-// mergeClientOptions combines the given *clientOptions into a single *clientOptions in a last one wins fashion.
+// mergeClientOptions combines the given *ClientOptions into a single *ClientOptions in a last one wins fashion.
 // The specified options are merged with the existing options on the Server, with the specified options taking
 // precedence.
-func mergeClientOptions(opts ...*clientOptions) *clientOptions {
+func mergeClientOptions(opts ...*ClientOptions) *ClientOptions {
 	newOptions := NewClientOptions()
 	for _, opt := range opts {
 		if opt == nil {
@@ -80,7 +80,7 @@ func mergeClientOptions(opts ...*clientOptions) *clientOptions {
 }
 
 // 配置
-func clientConfigure(opts *clientOptions) error {
+func clientConfigure(opts *ClientOptions) error {
 	if opts.serverAddress == nil {
 		return errors.WithMessage(xerror.Param, xruntime.Location())
 	}

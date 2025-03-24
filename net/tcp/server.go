@@ -18,7 +18,7 @@ type Server struct {
 	IEvent   xcommon.IEvent
 	IHandler xcommon.IHandler
 	listener *net.TCPListener //监听
-	options  *serverOptions
+	options  *ServerOptions
 }
 
 // NewServer 新建服务
@@ -45,7 +45,7 @@ func netErrorTemporary(tempDelay time.Duration) (newTempDelay time.Duration) {
 }
 
 // Start 运行服务
-func (p *Server) Start(_ context.Context, opts ...*serverOptions) error {
+func (p *Server) Start(_ context.Context, opts ...*ServerOptions) error {
 	p.options = mergeServerOptions(opts...)
 	if err := serverConfigure(p.options); err != nil {
 		return errors.WithMessage(err, xruntime.Location())

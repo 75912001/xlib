@@ -17,7 +17,7 @@ type Server struct {
 	IEvent   xcommon.IEvent
 	IHandler xcommon.IHandler
 	listener *kcp.Listener //监听
-	options  *serverOptions
+	options  *ServerOptions
 }
 
 // NewServer 新建服务
@@ -31,7 +31,7 @@ func NewServer(handler xcommon.IHandler) *Server {
 }
 
 // Start 开始
-func (p *Server) Start(_ context.Context, opts ...*serverOptions) error {
+func (p *Server) Start(_ context.Context, opts ...*ServerOptions) error {
 	p.options = mergeServerOptions(opts...)
 	if err := serverConfigure(p.options); err != nil {
 		return errors.WithMessage(err, xruntime.Location())

@@ -14,7 +14,6 @@ import (
 	"github.com/xtaci/kcp-go/v5"
 	"io"
 	"runtime/debug"
-	"strings"
 	"time"
 )
 
@@ -44,11 +43,7 @@ func (p *Remote) SetDisconnectReason(reason xcommon.DisconnectReason) {
 
 // GetIP 获取IP地址
 func (p *Remote) GetIP() string {
-	slice := strings.Split(p.UDPSession.RemoteAddr().String(), ":")
-	if len(slice) < 1 {
-		return ""
-	}
-	return slice[0]
+	return p.UDPSession.RemoteAddr().String()
 }
 
 // 开始
