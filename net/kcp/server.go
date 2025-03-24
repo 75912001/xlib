@@ -4,7 +4,7 @@ import (
 	"context"
 	xerror "github.com/75912001/xlib/error"
 	xlog "github.com/75912001/xlib/log"
-	xcommon "github.com/75912001/xlib/net/common"
+	xnetcommon "github.com/75912001/xlib/net/common"
 	xruntime "github.com/75912001/xlib/runtime"
 	"github.com/pkg/errors"
 	"github.com/xtaci/kcp-go/v5"
@@ -14,14 +14,14 @@ import (
 
 // Server 服务端
 type Server struct {
-	IEvent   xcommon.IEvent
-	IHandler xcommon.IHandler
+	IEvent   xnetcommon.IEvent
+	IHandler xnetcommon.IHandler
 	listener *kcp.Listener //监听
 	options  *ServerOptions
 }
 
 // NewServer 新建服务
-func NewServer(handler xcommon.IHandler) *Server {
+func NewServer(handler xnetcommon.IHandler) *Server {
 	return &Server{
 		IEvent:   nil,
 		IHandler: handler,
@@ -36,7 +36,7 @@ func (p *Server) Start(_ context.Context, opts ...*ServerOptions) error {
 	if err := serverConfigure(p.options); err != nil {
 		return errors.WithMessage(err, xruntime.Location())
 	}
-	p.IEvent = xcommon.NewEvent(p.options.eventChan)
+	p.IEvent = xnetcommon.NewEvent(p.options.eventChan)
 
 	var err error
 	if p.options.fec == nil || !*p.options.fec { //FEC 不启用

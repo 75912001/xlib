@@ -3,10 +3,11 @@ package kcp
 import (
 	"context"
 	"encoding/binary"
+	"fmt"
 	xconstants "github.com/75912001/xlib/constants"
 	xerror "github.com/75912001/xlib/error"
 	xlog "github.com/75912001/xlib/log"
-	xcommon "github.com/75912001/xlib/net/common"
+	xnetcommon "github.com/75912001/xlib/net/common"
 	xpacket "github.com/75912001/xlib/packet"
 	xruntime "github.com/75912001/xlib/runtime"
 	xutil "github.com/75912001/xlib/util"
@@ -22,8 +23,8 @@ type Remote struct {
 	UDPSession       *kcp.UDPSession
 	sendChan         chan interface{} //发送管道
 	cancelFunc       context.CancelFunc
-	Object           interface{}              // 保存 应用层数据
-	DisconnectReason xcommon.DisconnectReason // 断开原因
+	Object           interface{}                 // 保存 应用层数据
+	DisconnectReason xnetcommon.DisconnectReason // 断开原因
 }
 
 func NewRemote(udpSession *kcp.UDPSession, sendChan chan interface{}) *Remote {
@@ -33,11 +34,11 @@ func NewRemote(udpSession *kcp.UDPSession, sendChan chan interface{}) *Remote {
 	}
 }
 
-func (p *Remote) GetDisconnectReason() xcommon.DisconnectReason {
+func (p *Remote) GetDisconnectReason() xnetcommon.DisconnectReason {
 	return p.DisconnectReason
 }
 
-func (p *Remote) SetDisconnectReason(reason xcommon.DisconnectReason) {
+func (p *Remote) SetDisconnectReason(reason xnetcommon.DisconnectReason) {
 	p.DisconnectReason = reason
 }
 
@@ -47,7 +48,7 @@ func (p *Remote) GetIP() string {
 }
 
 // 开始
-func (p *Remote) Start(connOptions *xcommon.ConnOptions, event xcommon.IEvent, handler xcommon.IHandler) {
+func (p *Remote) Start(connOptions *xnetcommon.ConnOptions, event xnetcommon.IEvent, handler xnetcommon.IHandler) {
 	ctx := context.Background()
 	ctxWithCancel, cancelFunc := context.WithCancel(ctx)
 	p.cancelFunc = cancelFunc
@@ -72,8 +73,7 @@ func (p *Remote) Send(packet xpacket.IPacket) error {
 	}
 	err := xutil.PushEventWithTimeout(p.sendChan, packet, xconstants.BusAddTimeoutDuration)
 	if err != nil {
-		xlog.PrintfErr("Send packet, PushEventWithTimeout err:%v", err)
-		return errors.WithMessage(err, xruntime.Location())
+		return errors.WithMessage(err, fmt.Sprintf("Send packet, PushEventWithTimeout %v", xruntime.Location()))
 	}
 	return nil
 }
@@ -135,7 +135,7 @@ func (p *Remote) onSend(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case t := <-p.sendChan:
-			data, err = xcommon.PushPacket2Data(data, t.(xpacket.IPacket))
+			data, err = xnetcommon.PushPacket2Data(data, t.(xpacket.IPacket))
 			if err != nil {
 				xlog.PrintfErr("push2Data err:%v", err)
 				continue
@@ -158,7 +158,7 @@ func (p *Remote) onSend(ctx context.Context) {
 				thisTime = time.Now()
 				for 0 < len(p.sendChan) {
 					t := <-p.sendChan
-					data, err = xcommon.PushPacket2Data(data, t.(xpacket.IPacket))
+					data, err = xnetcommon.PushPacket2Data(data, t.(xpacket.IPacket))
 					if err != nil {
 						xlog.PrintfErr("push2Data err:%v", err)
 						continue
@@ -185,7 +185,7 @@ func (p *Remote) onSend(ctx context.Context) {
 }
 
 // 接收数据
-func (p *Remote) onRecv(event xcommon.IEvent, handler xcommon.IHandler) {
+func (p *Remote) onRecv(event xnetcommon.IEvent, handler xnetcommon.IHandler) {
 	defer func() { //断开链接
 		if xruntime.IsRelease() {
 			// 当 Conn 关闭, 该函数会引发 panic
@@ -208,8 +208,8 @@ func (p *Remote) onRecv(event xcommon.IEvent, handler xcommon.IHandler) {
 		readNum, err = p.UDPSession.Read(buf[readIndex:])
 		if nil != err {
 			xlog.PrintfInfo("remote:%p err:%v", p, err)
-			if p.GetDisconnectReason() == xcommon.DisconnectReasonUnknown { // 未设置,就设置为客户端主动断开
-				p.SetDisconnectReason(xcommon.DisconnectReasonClientShutdown)
+			if p.GetDisconnectReason() == xnetcommon.DisconnectReasonUnknown { // 未设置,就设置为客户端主动断开
+				p.SetDisconnectReason(xnetcommon.DisconnectReasonClientShutdown)
 			} else { // 已设置,就不再设置
 			}
 			return

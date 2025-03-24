@@ -6,7 +6,7 @@ import (
 	xconstants "github.com/75912001/xlib/constants"
 	xerror "github.com/75912001/xlib/error"
 	xlog "github.com/75912001/xlib/log"
-	xcommon "github.com/75912001/xlib/net/common"
+	xnetcommon "github.com/75912001/xlib/net/common"
 	xpacket "github.com/75912001/xlib/packet"
 	xpool "github.com/75912001/xlib/pool"
 	xruntime "github.com/75912001/xlib/runtime"
@@ -24,8 +24,8 @@ type Remote struct {
 	Conn             *net.TCPConn     // 连接
 	sendChan         chan interface{} // 发送管道
 	cancelFunc       context.CancelFunc
-	Object           interface{}              // 保存 应用层数据
-	DisconnectReason xcommon.DisconnectReason // 断开原因
+	Object           interface{}                 // 保存 应用层数据
+	DisconnectReason xnetcommon.DisconnectReason // 断开原因
 }
 
 func NewRemote(Conn *net.TCPConn, sendChan chan interface{}) *Remote {
@@ -35,11 +35,11 @@ func NewRemote(Conn *net.TCPConn, sendChan chan interface{}) *Remote {
 	}
 }
 
-func (p *Remote) GetDisconnectReason() xcommon.DisconnectReason {
+func (p *Remote) GetDisconnectReason() xnetcommon.DisconnectReason {
 	return p.DisconnectReason
 }
 
-func (p *Remote) SetDisconnectReason(reason xcommon.DisconnectReason) {
+func (p *Remote) SetDisconnectReason(reason xnetcommon.DisconnectReason) {
 	p.DisconnectReason = reason
 }
 
@@ -52,7 +52,7 @@ func (p *Remote) GetIP() string {
 	return slice[0]
 }
 
-func (p *Remote) Start(connOptions *xcommon.ConnOptions, event xcommon.IEvent, handler xcommon.IHandler) {
+func (p *Remote) Start(connOptions *xnetcommon.ConnOptions, event xnetcommon.IEvent, handler xnetcommon.IHandler) {
 	//var err error
 	//if err = p.Conn.SetKeepAlive(true); err != nil {
 	//	xlog.PrintfErr("SetKeepAlive err:%v", err)
@@ -159,7 +159,7 @@ func (p *Remote) onSend(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case t := <-p.sendChan:
-			data, err = xcommon.PushPacket2Data(data, t.(xpacket.IPacket))
+			data, err = xnetcommon.PushPacket2Data(data, t.(xpacket.IPacket))
 			if err != nil {
 				xlog.PrintfErr("push2Data err:%v", err)
 				continue
@@ -181,7 +181,7 @@ func (p *Remote) onSend(ctx context.Context) {
 				}
 				for 0 < len(p.sendChan) { // 尽量取出待发送数据
 					t := <-p.sendChan
-					data, err = xcommon.PushPacket2Data(data, t.(xpacket.IPacket))
+					data, err = xnetcommon.PushPacket2Data(data, t.(xpacket.IPacket))
 					if err != nil {
 						xlog.PrintfErr("push2Data err:%v", err)
 						continue
@@ -202,7 +202,7 @@ func (p *Remote) onSend(ctx context.Context) {
 }
 
 // 接收数据
-func (p *Remote) onRecv(event xcommon.IEvent, handler xcommon.IHandler) {
+func (p *Remote) onRecv(event xnetcommon.IEvent, handler xnetcommon.IHandler) {
 	defer func() { // 断开链接
 		if xruntime.IsRelease() {
 			// 当 Conn 关闭, 该函数会引发 panic
@@ -223,8 +223,8 @@ func (p *Remote) onRecv(event xcommon.IEvent, handler xcommon.IHandler) {
 			if !xutil.IsNetErrClosing(err) {
 				xlog.PrintfErr("remote:%p err:%v", p, err)
 			}
-			if p.GetDisconnectReason() == xcommon.DisconnectReasonUnknown { // 未设置,就设置为客户端主动断开
-				p.SetDisconnectReason(xcommon.DisconnectReasonClientShutdown)
+			if p.GetDisconnectReason() == xnetcommon.DisconnectReasonUnknown { // 未设置,就设置为客户端主动断开
+				p.SetDisconnectReason(xnetcommon.DisconnectReasonClientShutdown)
 			} else { // 已设置,就不再设置
 			}
 			return
@@ -232,7 +232,7 @@ func (p *Remote) onRecv(event xcommon.IEvent, handler xcommon.IHandler) {
 		packetLength := binary.LittleEndian.Uint32(msgLengthBuf)
 		if err := handler.OnCheckPacketLength(packetLength); err != nil {
 			xlog.PrintfErr("remote:%p OnCheckPacketLength err:%v", p, err)
-			p.SetDisconnectReason(xcommon.DisconnectReasonClientLogic)
+			p.SetDisconnectReason(xnetcommon.DisconnectReasonClientLogic)
 			return
 		}
 		buf := xpool.MakeByteSlice(int(packetLength))
@@ -240,7 +240,7 @@ func (p *Remote) onRecv(event xcommon.IEvent, handler xcommon.IHandler) {
 		if _, err := io.ReadFull(p.Conn, buf[xpacket.HeaderLengthFieldSize:]); err != nil {
 			xlog.PrintfErr("remote:%p err:%v", p, err)
 			_ = xpool.ReleaseByteSlice(buf)
-			p.SetDisconnectReason(xcommon.DisconnectReasonClientLogic)
+			p.SetDisconnectReason(xnetcommon.DisconnectReasonClientLogic)
 			return
 		}
 		if err := handler.OnCheckPacketLimit(p); err != nil {

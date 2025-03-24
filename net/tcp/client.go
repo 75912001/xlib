@@ -2,7 +2,7 @@ package tcp
 
 import (
 	"context"
-	xcommon "github.com/75912001/xlib/net/common"
+	xnetcommon "github.com/75912001/xlib/net/common"
 	xruntime "github.com/75912001/xlib/runtime"
 	"github.com/pkg/errors"
 	"net"
@@ -10,12 +10,12 @@ import (
 
 // Client 客户端
 type Client struct {
-	IEvent   xcommon.IEvent
-	IHandler xcommon.IHandler
-	IRemote  xcommon.IRemote
+	IEvent   xnetcommon.IEvent
+	IHandler xnetcommon.IHandler
+	IRemote  xnetcommon.IRemote
 }
 
-func NewClient(handler xcommon.IHandler) *Client {
+func NewClient(handler xnetcommon.IHandler) *Client {
 	return &Client{
 		IEvent:   nil,
 		IHandler: handler,
@@ -31,7 +31,7 @@ func (p *Client) Connect(ctx context.Context, opts ...*ClientOptions) error {
 	if err := clientConfigure(newOpts); err != nil {
 		return errors.WithMessage(err, xruntime.Location())
 	}
-	p.IEvent = xcommon.NewEvent(newOpts.eventChan)
+	p.IEvent = xnetcommon.NewEvent(newOpts.eventChan)
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", *newOpts.serverAddress)
 	if nil != err {
 		return errors.WithMessage(err, xruntime.Location())

@@ -2,7 +2,7 @@ package tcp
 
 import (
 	xerror "github.com/75912001/xlib/error"
-	xcommon "github.com/75912001/xlib/net/common"
+	xnetcommon "github.com/75912001/xlib/net/common"
 	xruntime "github.com/75912001/xlib/runtime"
 	"github.com/pkg/errors"
 )
@@ -13,7 +13,7 @@ type ClientOptions struct {
 	serverAddress    *string            // 服务端的地址 e.g.:127.0.0.1:8787
 	eventChan        chan<- interface{} // 外部传递的事件处理管道.连接的事件会放入该管道,以供外部处理
 	sendChanCapacity *uint32            // 发送管道容量
-	connOptions      *xcommon.ConnOptions
+	connOptions      *xnetcommon.ConnOptions
 }
 
 // NewClientOptions 新的ClientOptions
@@ -22,7 +22,7 @@ func NewClientOptions() *ClientOptions {
 		serverAddress:    nil,
 		eventChan:        nil,
 		sendChanCapacity: nil,
-		connOptions:      xcommon.NewConnOptions(),
+		connOptions:      xnetcommon.NewConnOptions(),
 	}
 }
 

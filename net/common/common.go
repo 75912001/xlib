@@ -1,5 +1,7 @@
 package common
 
+import "time"
+
 // DisconnectReason 表示断开连接的原因
 type DisconnectReason int
 
@@ -9,4 +11,8 @@ const (
 	DisconnectReasonClientTimeout                   = 200 // 客户端超时
 	DisconnectReasonClientLogic                     = 201 // 客户端逻辑
 	DisconnectReasonClientShutdown                  = 202 // 客户端关闭
+)
+
+const (
+	EventAddTimeoutDuration = 3 * time.Second // 事件-加入的超时时间
 )

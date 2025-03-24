@@ -2,7 +2,7 @@ package kcp
 
 import (
 	xerror "github.com/75912001/xlib/error"
-	xcommon "github.com/75912001/xlib/net/common"
+	xnetcommon "github.com/75912001/xlib/net/common"
 	xruntime "github.com/75912001/xlib/runtime"
 	"github.com/pkg/errors"
 	"github.com/xtaci/kcp-go/v5"
@@ -15,7 +15,7 @@ type ServerOptions struct {
 	listenAddress    *string            //监听地址 e.g.:xxx.xxx.xxx.xxx:8899
 	eventChan        chan<- interface{} // 待处理的事件
 	sendChanCapacity *uint32            // 发送 channel 大小
-	connOptions      xcommon.ConnOptions
+	connOptions      xnetcommon.ConnOptions
 
 	blockCrypt kcp.BlockCrypt //加密,解密
 	mtuBytes   *int           //e.g.: 1350

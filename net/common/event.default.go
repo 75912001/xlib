@@ -1,8 +1,7 @@
 package common
 
 import (
-	xconstants "github.com/75912001/xlib/constants"
-	xlog "github.com/75912001/xlib/log"
+	"fmt"
 	xpacket "github.com/75912001/xlib/packet"
 	xruntime "github.com/75912001/xlib/runtime"
 	xutil "github.com/75912001/xlib/util"
@@ -26,10 +25,9 @@ func (p *Event) Connect(handler IHandler, remote IRemote) error {
 			IHandler: handler,
 			IRemote:  remote,
 		},
-		xconstants.BusAddTimeoutDuration)
+		EventAddTimeoutDuration)
 	if err != nil {
-		xlog.PrintfErr("push Connect failed with eventChan full. remote:%v", remote)
-		return errors.WithMessage(err, xruntime.Location())
+		return errors.WithMessage(err, fmt.Sprintf("push Connect failed with eventChan full. remote:%v, %v", remote, xruntime.Location()))
 	}
 	return nil
 }
@@ -41,10 +39,9 @@ func (p *Event) Disconnect(handler IHandler, remote IRemote) error {
 			IHandler: handler,
 			IRemote:  remote,
 		},
-		xconstants.BusAddTimeoutDuration)
+		EventAddTimeoutDuration)
 	if err != nil {
-		xlog.PrintfErr("push Disconnect failed with eventChan full. remote:%v", remote)
-		return errors.WithMessage(err, xruntime.Location())
+		return errors.WithMessage(err, fmt.Sprintf("push Disconnect failed with eventChan full. remote:%v, %v", remote, xruntime.Location()))
 	}
 	return nil
 }
@@ -57,10 +54,9 @@ func (p *Event) Packet(handler IHandler, remote IRemote, packet xpacket.IPacket)
 			IRemote:  remote,
 			IPacket:  packet,
 		},
-		xconstants.BusAddTimeoutDuration)
+		EventAddTimeoutDuration)
 	if err != nil {
-		xlog.PrintfErr("push Packet failed with eventChan full. remote:%v packet:%v", remote, packet)
-		return errors.WithMessage(err, xruntime.Location())
+		return errors.WithMessage(err, fmt.Sprintf("push Packet failed with eventChan full. remote:%v packet:%v, %v", remote, packet, xruntime.Location()))
 	}
 	return nil
 }

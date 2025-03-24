@@ -2,7 +2,7 @@ package tcp
 
 import (
 	xerror "github.com/75912001/xlib/error"
-	xcommon "github.com/75912001/xlib/net/common"
+	xnetcommon "github.com/75912001/xlib/net/common"
 	xruntime "github.com/75912001/xlib/runtime"
 	"github.com/pkg/errors"
 )
@@ -13,7 +13,7 @@ type ServerOptions struct {
 	listenAddress    *string            // 127.0.0.1:8787
 	eventChan        chan<- interface{} // 待处理的事件
 	sendChanCapacity *uint32            // 发送 channel 大小
-	connOptions      xcommon.ConnOptions
+	connOptions      xnetcommon.ConnOptions
 }
 
 // NewServerOptions 新的ServerOptions
