@@ -1,4 +1,4 @@
-package bench
+package config
 
 import (
 	xruntime "github.com/75912001/xlib/runtime"

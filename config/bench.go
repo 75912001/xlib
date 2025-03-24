@@ -2,7 +2,7 @@
 // 服务配置文件, 用于配置服务的基本信息.
 // 该配置文件与可执行程序在同一目录下.
 
-package bench
+package config
 
 import (
 	"fmt"
@@ -21,8 +21,8 @@ import (
 // 配置-主项,用户服务的基本配置
 
 type Mgr struct {
-	RootCfg rootYaml
-	Cfg     benchYaml
+	Root   rootYaml
+	Config configYaml
 }
 
 type rootYaml struct {
@@ -45,13 +45,13 @@ type Etcd struct {
 	TTL   *int64   `yaml:"ttl"`   // ttl 秒 [default]: xetcd.TtlSecondDefault 秒, e.g.:系统每10秒续约一次,该参数至少为11秒
 }
 
-type benchYaml struct {
+type configYaml struct {
 	Base      Base                 `yaml:"base"`
 	Timer     Timer                `yaml:"timer"`
 	ServerNet []*xcommon.ServerNet `yaml:"serverNet"`
 }
 
-func (p *benchYaml) Parse(yamlString string) error {
+func (p *configYaml) Parse(yamlString string) error {
 	err := yaml.Unmarshal([]byte(yamlString), p)
 	if err != nil {
 		return errors.WithMessage(err, xruntime.Location())

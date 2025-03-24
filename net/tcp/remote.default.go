@@ -3,7 +3,6 @@ package tcp
 import (
 	"context"
 	"encoding/binary"
-	xconstants "github.com/75912001/xlib/constants"
 	xerror "github.com/75912001/xlib/error"
 	xlog "github.com/75912001/xlib/log"
 	xnetcommon "github.com/75912001/xlib/net/common"
@@ -95,7 +94,7 @@ func (p *Remote) Send(packet xpacket.IPacket) error {
 	if !p.IsConnect() {
 		return errors.WithMessage(xerror.Link, xruntime.Location())
 	}
-	err := xutil.PushEventWithTimeout(p.sendChan, packet, xconstants.BusAddTimeoutDuration)
+	err := xutil.PushEventWithTimeout(p.sendChan, packet, xnetcommon.EventAddTimeoutDuration)
 	if err != nil {
 		xlog.PrintfErr("Send packet, PushEventWithTimeout err:%v", err)
 		return errors.WithMessage(err, xruntime.Location())

@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
-	xbench "github.com/75912001/xlib/bench"
+	xconfig "github.com/75912001/xlib/config"
 	xcontrol "github.com/75912001/xlib/control"
 	xerror "github.com/75912001/xlib/error"
 	xetcd "github.com/75912001/xlib/etcd"
@@ -28,8 +28,8 @@ import (
 )
 
 type Server struct {
-	BenchMgr xbench.Mgr
-	BenchSub *xbench.Sub
+	BenchMgr xconfig.Mgr
+	BenchSub *xconfig.Sub
 
 	GroupID        uint32 // 组ID
 	Name           string // 名称
@@ -110,19 +110,19 @@ func (p *Server) Start(ctx context.Context,
 	uuid.EnableRandPool()
 	// 服务配置文件
 	benchPath := path.Join(p.ExecutablePath, fmt.Sprintf("%v.%v.%v.%v",
-		p.GroupID, p.Name, p.ID, xbench.ServerConfigFileSuffix))
+		p.GroupID, p.Name, p.ID, xconfig.ServerConfigFileSuffix))
 	content, err := os.ReadFile(benchPath)
 	if err != nil {
 		return errors.WithMessage(err, xruntime.Location())
 	}
 	benchString := string(content)
 	// 加载服务配置文件-root部分
-	err = p.BenchMgr.RootCfg.Parse(benchString)
+	err = p.BenchMgr.Root.Parse(benchString)
 	if err != nil {
 		return errors.WithMessage(err, xruntime.Location())
 	}
 	// 加载服务配置文件-公共部分
-	err = p.BenchMgr.Cfg.Parse(benchString)
+	err = p.BenchMgr.Config.Parse(benchString)
 	if err != nil {
 		return errors.WithMessage(err, xruntime.Location())
 	}
@@ -152,22 +152,22 @@ func (p *Server) Start(ctx context.Context,
 	if err != nil {
 		return errors.WithMessage(err, xruntime.Location())
 	}
-	switch *p.BenchMgr.Cfg.Base.RunMode {
+	switch *p.BenchMgr.Config.Base.RunMode {
 	case 0:
 		xruntime.SetRunMode(xruntime.RunModeRelease)
 	case 1:
 		xruntime.SetRunMode(xruntime.RunModeDebug)
 	default:
-		return errors.Errorf("runMode err:%v %v", *p.BenchMgr.Cfg.Base.RunMode, xruntime.Location())
+		return errors.Errorf("runMode err:%v %v", *p.BenchMgr.Config.Base.RunMode, xruntime.Location())
 	}
 	// GoMaxProcess
-	previous := runtime.GOMAXPROCS(*p.BenchMgr.Cfg.Base.GoMaxProcess)
+	previous := runtime.GOMAXPROCS(*p.BenchMgr.Config.Base.GoMaxProcess)
 	xlog.PrintfInfo("go max process new:%v, previous setting:%v",
-		*p.BenchMgr.Cfg.Base.GoMaxProcess, previous)
+		*p.BenchMgr.Config.Base.GoMaxProcess, previous)
 	// 日志
 	p.Log, err = xlog.NewMgr(xlog.NewOptions().
-		WithLevel(*p.BenchMgr.Cfg.Base.LogLevel).
-		WithAbsPath(*p.BenchMgr.Cfg.Base.LogAbsPath).
+		WithLevel(*p.BenchMgr.Config.Base.LogLevel).
+		WithAbsPath(*p.BenchMgr.Config.Base.LogAbsPath).
 		WithNamePrefix(fmt.Sprintf("%v.%v.%v", p.GroupID, p.Name, p.ID)).
 		WithLevelCallBack(logCallbackFunc, xlog.LevelFatal, xlog.LevelError, xlog.LevelWarn),
 	)
@@ -182,7 +182,7 @@ func (p *Server) Start(ctx context.Context,
 		}
 	}
 	// eventChan
-	p.BusChannel = make(chan interface{}, *p.BenchMgr.Cfg.Base.BusChannelCapacity)
+	p.BusChannel = make(chan interface{}, *p.BenchMgr.Config.Base.BusChannelCapacity)
 	go func() {
 		defer func() {
 			p.BusChannelWaitGroup.Done()
@@ -193,16 +193,16 @@ func (p *Server) Start(ctx context.Context,
 		_ = p.Handle()
 	}()
 	// 是否开启http采集分析
-	if p.BenchMgr.Cfg.Base.PprofHttpPort != nil {
-		xpprof.StartHTTPprof(fmt.Sprintf("0.0.0.0:%d", *p.BenchMgr.Cfg.Base.PprofHttpPort))
+	if p.BenchMgr.Config.Base.PprofHttpPort != nil {
+		xpprof.StartHTTPprof(fmt.Sprintf("0.0.0.0:%d", *p.BenchMgr.Config.Base.PprofHttpPort))
 	}
 	// 全局定时器
-	if p.BenchMgr.Cfg.Timer.ScanSecondDuration != nil || p.BenchMgr.Cfg.Timer.ScanMillisecondDuration != nil {
+	if p.BenchMgr.Config.Timer.ScanSecondDuration != nil || p.BenchMgr.Config.Timer.ScanMillisecondDuration != nil {
 		p.Timer = xtimer.NewTimer()
 		err = p.Timer.Start(ctx,
 			xtimer.NewOptions().
-				WithScanSecondDuration(*p.BenchMgr.Cfg.Timer.ScanSecondDuration).
-				WithScanMillisecondDuration(*p.BenchMgr.Cfg.Timer.ScanMillisecondDuration).
+				WithScanSecondDuration(*p.BenchMgr.Config.Timer.ScanSecondDuration).
+				WithScanMillisecondDuration(*p.BenchMgr.Config.Timer.ScanMillisecondDuration).
 				WithOutgoingTimerOutChan(p.BusChannel),
 		)
 		if err != nil {
@@ -210,18 +210,18 @@ func (p *Server) Start(ctx context.Context,
 		}
 	}
 	// etcd
-	p.EtcdKey = xetcd.GenKey(*p.BenchMgr.Cfg.Base.ProjectName, xetcd.WatchMsgTypeServer, p.GroupID, p.Name, p.ID)
+	p.EtcdKey = xetcd.GenKey(*p.BenchMgr.Config.Base.ProjectName, xetcd.WatchMsgTypeServer, p.GroupID, p.Name, p.ID)
 	defaultEtcd := xetcd.NewEtcd(
 		xetcd.NewOptions().
-			WithAddrs(p.BenchMgr.RootCfg.Etcd.Addrs).
-			WithTTL(*p.BenchMgr.RootCfg.Etcd.TTL).
-			WithWatchKeyPrefix(xetcd.GenPrefixKey(*p.BenchMgr.Cfg.Base.ProjectName)).
+			WithAddrs(p.BenchMgr.Root.Etcd.Addrs).
+			WithTTL(*p.BenchMgr.Root.Etcd.TTL).
+			WithWatchKeyPrefix(xetcd.GenPrefixKey(*p.BenchMgr.Config.Base.ProjectName)).
 			WithKey(p.EtcdKey).
 			WithValue(
 				&xetcd.ValueJson{
-					ServerNet:     p.BenchMgr.Cfg.ServerNet,
-					Version:       *p.BenchMgr.Cfg.Base.Version,
-					AvailableLoad: *p.BenchMgr.Cfg.Base.AvailableLoad,
+					ServerNet:     p.BenchMgr.Config.ServerNet,
+					Version:       *p.BenchMgr.Config.Base.Version,
+					AvailableLoad: *p.BenchMgr.Config.Base.AvailableLoad,
 					SecondOffset:  0,
 				},
 			).
@@ -240,7 +240,7 @@ func (p *Server) Start(ctx context.Context,
 	// etcd-定时上报
 	p.Timer.AddSecond(xcontrol.NewCallBack(etcdReportFunction, p), p.TimeMgr.ShadowTimestamp()+xetcd.ReportIntervalSecondDefault)
 	// 网络服务
-	for _, element := range p.BenchMgr.Cfg.ServerNet {
+	for _, element := range p.BenchMgr.Config.ServerNet {
 		if len(*element.Addr) != 0 {
 			switch *element.Type {
 			case "tcp": // 启动 TCP 服务
@@ -249,7 +249,7 @@ func (p *Server) Start(ctx context.Context,
 					xtcp.NewServerOptions().
 						WithListenAddress(*element.Addr).
 						WithEventChan(p.BusChannel).
-						WithSendChanCapacity(*p.BenchMgr.Cfg.Base.SendChannelCapacity),
+						WithSendChanCapacity(*p.BenchMgr.Config.Base.SendChannelCapacity),
 				); err != nil {
 					return errors.WithMessage(err, xruntime.Location())
 				}

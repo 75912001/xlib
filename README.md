@@ -19,11 +19,11 @@
 
 
 - **lib**: 公共库
-  - **bench**: 服务基础配置[todo menglc]
-  - **common**: 公共模块[todo menglc]
-  - **constants**: 常量[todo menglc]
+  - **config**: 服务基础配置
+  - **common**: 公共模块
+  - **constants**: 常量
   - **control**: 控件
-  - **error**: 错误码[todo menglc]
+  - **error**: 错误码
   - **etcd**: etcd客户端[todo menglc]
   - **example**: 示例[todo menglc]
   - **exec**: 执行器 [todo menglc]
