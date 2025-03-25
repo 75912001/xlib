@@ -9,7 +9,6 @@ import (
 type IEtcd interface {
 	Start(ctx context.Context) (err error)
 	Stop() (err error)
-
 	Put(key string, value string) (*etcdclientv3.PutResponse, error)
 }
 
