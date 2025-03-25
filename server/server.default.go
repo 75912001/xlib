@@ -56,7 +56,8 @@ type Server struct {
 	TCPServer *xnettcp.Server
 	KCPServer *xnetkcp.Server
 
-	options *ServerOptions
+	options      *ServerOptions
+	ServerObject IServer // 服务实例
 }
 
 // NewServer 创建服务
@@ -300,12 +301,20 @@ func (p *Server) Start(ctx context.Context, opts ...*ServerOptions) (err error) 
 	case s := <-sigChan:
 		p.Log.Warnf("Server got signal: %s, shutting down...", s)
 	}
+	err = p.ServerObject.PreStop()
+	if err != nil {
+		p.Log.Warn("pre stop err:%v ", err)
+	}
 	// 设置为关闭中
 	SetServerStopping()
 	// 定时检查事件总线是否消费完成
 	go p.checkGBusChannel()
 	// 等待GEventChan处理结束
 	p.BusChannelWaitGroup.Wait()
+	err = p.ServerObject.Stop()
+	if err != nil {
+		p.Log.Warn("server stop err:%v ", err)
+	}
 	return nil
 }
 
