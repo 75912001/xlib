@@ -29,8 +29,6 @@ func timeOut(arg ...interface{}) error {
 const StatusRunning = 0  // 服务状态：运行中
 const StatusStopping = 1 // 服务状态：关闭中
 
-var GQuitChan = make(chan bool)
-
 var GServerStatus uint32
 
 // IsServerStopping 服务是否关闭中

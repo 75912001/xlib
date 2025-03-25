@@ -112,6 +112,7 @@ func HexStringToUint32(hexStr string) (uint32, error) {
 	return uint32(value), nil
 }
 
+// todo menglc 每次创建定时器, 性能堪忧, 需要优化
 func PushEventWithTimeout(eventChan chan<- interface{}, event interface{}, timeout time.Duration) error {
 	select {
 	case eventChan <- event:
