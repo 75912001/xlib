@@ -295,28 +295,25 @@ func (p *Server) Start(ctx context.Context, opts ...*ServerOptions) (err error) 
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
 
 	select {
-	case <-GQuitChan:
+	case <-p.QuitChan:
 		p.Log.Warn("Server will shutdown in a few seconds")
 	case s := <-sigChan:
 		p.Log.Warnf("Server got signal: %s, shutting down...", s)
 	}
-	_ = p.PreStop()
-	_ = p.Stop()
-	return nil
-}
-
-func (p *Server) PreStop() error {
 	// 设置为关闭中
 	SetServerStopping()
-	return nil
-}
-
-func (p *Server) Stop() (err error) {
 	// 定时检查事件总线是否消费完成
 	go p.checkGBusChannel()
 	// 等待GEventChan处理结束
 	p.BusChannelWaitGroup.Wait()
+	return nil
+}
 
+func (p *Server) PreStop() error {
+	return xerror.NotImplemented
+}
+
+func (p *Server) Stop() (err error) {
 	err = p.Etcd.Stop()
 	if err != nil {
 		p.Log.Errorf("etcd stop err:%v", err)
