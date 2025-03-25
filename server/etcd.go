@@ -5,19 +5,21 @@ import (
 	xetcd "github.com/75912001/xlib/etcd"
 )
 
+const ReportIntervalSecondDefault int64 = 30 // etcd-上报时间间隔 秒
+
 // etcdReportFunction etcd-上报
 func etcdReportFunction(args ...interface{}) error {
 	defaultServer := args[0].(*Server)
 	defer func() {
 		defaultServer.Timer.AddSecond(
 			xcontrol.NewCallBack(etcdReportFunction, defaultServer),
-			defaultServer.TimeMgr.ShadowTimestamp()+xetcd.ReportIntervalSecondDefault,
+			defaultServer.TimeMgr.ShadowTimestamp()+ReportIntervalSecondDefault,
 		)
 	}()
 	valueJson := &xetcd.ValueJson{
-		ServerNet:     defaultServer.BenchMgr.Config.ServerNet,
-		Version:       *defaultServer.BenchMgr.Config.Base.Version,
-		AvailableLoad: *defaultServer.BenchMgr.Config.Base.AvailableLoad,
+		ServerNet:     defaultServer.ConfigMgr.Config.ServerNet,
+		Version:       *defaultServer.ConfigMgr.Config.Base.Version,
+		AvailableLoad: defaultServer.AvailableLoad,
 		SecondOffset:  0,
 	}
 	value := xetcd.ValueJson2String(valueJson)
