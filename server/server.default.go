@@ -15,7 +15,6 @@ import (
 	xruntime "github.com/75912001/xlib/runtime"
 	xtime "github.com/75912001/xlib/time"
 	xtimer "github.com/75912001/xlib/timer"
-	xutil "github.com/75912001/xlib/util"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/xdg-go/pbkdf2"
@@ -107,10 +106,6 @@ func (p *Server) Start(ctx context.Context, opts ...*ServerOptions) (err error) 
 	}
 	rand.Seed(time.Now().UnixNano())
 	p.TimeMgr.Update()
-	// 小端
-	if !xutil.IsLittleEndian() {
-		return errors.Errorf("system is bigEndian! %v", xruntime.Location())
-	}
 	// 开启UUID随机
 	uuid.EnableRandPool()
 	// 服务配置文件
