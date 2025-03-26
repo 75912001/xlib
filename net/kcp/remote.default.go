@@ -2,7 +2,6 @@ package kcp
 
 import (
 	"context"
-	"encoding/binary"
 	"fmt"
 	xerror "github.com/75912001/xlib/error"
 	xlog "github.com/75912001/xlib/log"
@@ -215,7 +214,7 @@ func (p *Remote) onRecv(event xnetcommon.IEvent, handler xnetcommon.IHandler) {
 		}
 		readIndex += readNum
 		for {
-			packetLength := binary.LittleEndian.Uint32(buf)
+			packetLength := xpacket.UnpackUint32(buf)
 			err = handler.OnCheckPacketLength(packetLength)
 			if nil != err {
 				if errors.Is(err, xerror.LengthNotEnough) { // 数据不够,继续读
