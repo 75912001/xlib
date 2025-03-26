@@ -216,7 +216,7 @@ func (p *Remote) onRecv(event xnetcommon.IEvent, handler xnetcommon.IHandler) {
 	}()
 	// 消息总长度
 	msgLengthBuf := make([]byte, xpacket.HeaderLengthFieldSize)
-	for {
+	for { // todo menglc 可以将两段 读, 改成 一次性读取, 优化性能,会减少一次系统调用, 但是会增加内存占用
 		if _, err := io.ReadFull(p.Conn, msgLengthBuf); err != nil {
 			if !xutil.IsNetErrClosing(err) {
 				xlog.PrintfErr("remote:%p err:%v", p, err)
