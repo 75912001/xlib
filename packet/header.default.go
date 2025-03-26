@@ -2,7 +2,6 @@ package packet
 
 import (
 	"encoding/binary"
-	xutil "github.com/75912001/xlib/util"
 )
 
 const HeaderSize uint32 = 24
@@ -24,18 +23,34 @@ func NewHeader() *Header {
 
 func (p *Header) Pack() []byte {
 	data := make([]byte, p.Length) // [todo menglc] 这里可以使用内存池,记得回收
-	xutil.PackUint32(p.Length, data[0:])
-	xutil.PackUint32(p.MessageID, data[4:])
-	xutil.PackUint32(p.SessionID, data[8:])
-	xutil.PackUint32(p.ResultID, data[12:])
-	xutil.PackUint64(p.Key, data[16:])
+	if IsBigEndian() {
+		binary.BigEndian.PutUint32(data[0:], p.Length)
+		binary.BigEndian.PutUint32(data[4:], p.MessageID)
+		binary.BigEndian.PutUint32(data[8:], p.SessionID)
+		binary.BigEndian.PutUint32(data[12:], p.ResultID)
+		binary.BigEndian.PutUint64(data[16:], p.Key)
+	} else {
+		binary.LittleEndian.PutUint32(data[0:], p.Length)
+		binary.LittleEndian.PutUint32(data[4:], p.MessageID)
+		binary.LittleEndian.PutUint32(data[8:], p.SessionID)
+		binary.LittleEndian.PutUint32(data[12:], p.ResultID)
+		binary.LittleEndian.PutUint64(data[16:], p.Key)
+	}
 	return data
 }
 
 func (p *Header) Unpack(data []byte) {
-	p.Length = binary.LittleEndian.Uint32(data[0:4])
-	p.MessageID = binary.LittleEndian.Uint32(data[4:8])
-	p.SessionID = binary.LittleEndian.Uint32(data[8:12])
-	p.ResultID = binary.LittleEndian.Uint32(data[12:16])
-	p.Key = binary.LittleEndian.Uint64(data[16:HeaderSize])
+	if IsBigEndian() {
+		p.Length = binary.BigEndian.Uint32(data[0:4])
+		p.MessageID = binary.BigEndian.Uint32(data[4:8])
+		p.SessionID = binary.BigEndian.Uint32(data[8:12])
+		p.ResultID = binary.BigEndian.Uint32(data[12:16])
+		p.Key = binary.BigEndian.Uint64(data[16:HeaderSize])
+	} else {
+		p.Length = binary.LittleEndian.Uint32(data[0:4])
+		p.MessageID = binary.LittleEndian.Uint32(data[4:8])
+		p.SessionID = binary.LittleEndian.Uint32(data[8:12])
+		p.ResultID = binary.LittleEndian.Uint32(data[12:16])
+		p.Key = binary.LittleEndian.Uint64(data[16:HeaderSize])
+	}
 }

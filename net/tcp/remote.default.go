@@ -2,7 +2,6 @@ package tcp
 
 import (
 	"context"
-	"encoding/binary"
 	xerror "github.com/75912001/xlib/error"
 	xlog "github.com/75912001/xlib/log"
 	xnetcommon "github.com/75912001/xlib/net/common"
@@ -228,7 +227,7 @@ func (p *Remote) onRecv(event xnetcommon.IEvent, handler xnetcommon.IHandler) {
 			}
 			return
 		}
-		packetLength := binary.LittleEndian.Uint32(msgLengthBuf)
+		packetLength := xpacket.UnpackUint32(msgLengthBuf)
 		if err := handler.OnCheckPacketLength(packetLength); err != nil {
 			xlog.PrintfErr("remote:%p OnCheckPacketLength err:%v", p, err)
 			p.SetDisconnectReason(xnetcommon.DisconnectReasonClientLogic)
