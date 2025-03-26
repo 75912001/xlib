@@ -31,7 +31,7 @@
   - **log**: 日志[todo menglc]
   - **message**: 消息
   - **net**: 网络
-  - **packet**: 数据包[todo menglc]
+  - **packet**: 数据包
   - **pool**: 对象池[todo menglc]
   - **pprof**: 性能分析[todo menglc]
   - **runtime**: 运行时[todo menglc]
