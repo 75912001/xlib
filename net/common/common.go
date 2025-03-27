@@ -2,6 +2,9 @@ package common
 
 import "time"
 
+const ServerNetTypeNameTCP = "tcp"
+const ServerNetTypeNameKCP = "kcp"
+
 // DisconnectReason 表示断开连接的原因
 type DisconnectReason int
 
