@@ -9,6 +9,7 @@ import (
 	xcommon "github.com/75912001/xlib/common"
 	xerror "github.com/75912001/xlib/error"
 	xetcd "github.com/75912001/xlib/etcd"
+	xnetcommon "github.com/75912001/xlib/net/common"
 	xruntime "github.com/75912001/xlib/runtime"
 	xtimer "github.com/75912001/xlib/timer"
 	"github.com/pkg/errors"
@@ -106,10 +107,10 @@ func (p *configYaml) Parse(yamlString string) error {
 			v.Addr = &defaultValue
 		}
 		if v.Type == nil {
-			defaultValue := "tcp"
+			defaultValue := xnetcommon.ServerNetTypeNameTCP
 			v.Type = &defaultValue
 		}
-		if *v.Type != "tcp" && *v.Type != "kcp" {
+		if *v.Type != xnetcommon.ServerNetTypeNameTCP && *v.Type != xnetcommon.ServerNetTypeNameKCP {
 			return xerror.NotImplemented.WithExtraMessage(fmt.Sprintf("serviceNet.type must be tcp or kcp. %x", xruntime.Location()))
 		}
 	}

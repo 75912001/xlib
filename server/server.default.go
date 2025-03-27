@@ -9,6 +9,7 @@ import (
 	xerror "github.com/75912001/xlib/error"
 	xetcd "github.com/75912001/xlib/etcd"
 	xlog "github.com/75912001/xlib/log"
+	xnetcommon "github.com/75912001/xlib/net/common"
 	xnetkcp "github.com/75912001/xlib/net/kcp"
 	xnettcp "github.com/75912001/xlib/net/tcp"
 	xpprof "github.com/75912001/xlib/pprof"
@@ -241,7 +242,7 @@ func (p *Server) Start(ctx context.Context, opts ...*ServerOptions) (err error) 
 	for _, element := range p.ConfigMgr.Config.ServerNet {
 		if len(*element.Addr) != 0 {
 			switch *element.Type {
-			case "tcp": // 启动 TCP 服务
+			case xnetcommon.ServerNetTypeNameTCP: // 启动 TCP 服务
 				p.TCPServer = xnettcp.NewServer(p.options.TCPHandler)
 				if err = p.TCPServer.Start(ctx,
 					xnettcp.NewServerOptions().
@@ -251,7 +252,7 @@ func (p *Server) Start(ctx context.Context, opts ...*ServerOptions) (err error) 
 				); err != nil {
 					return errors.WithMessage(err, xruntime.Location())
 				}
-			case "kcp":
+			case xnetcommon.ServerNetTypeNameKCP:
 				p.KCPServer = xnetkcp.NewServer(p.options.KCPHandler)
 				var blockCrypt kcp.BlockCrypt
 				if true { // 使用默认加密方式
