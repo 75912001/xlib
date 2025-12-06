@@ -4,6 +4,7 @@ package error
 var (
 	Success           = NewError(0x0000).WithName("Success").WithDesc("success-成功")
 	Fail              = NewError(0x0001).WithName("Fail").WithDesc("fail-失败")
+	NotSupport        = NewError(0x0002).WithName("NotSupport").WithDesc("not-support-不支持")
 	Valid             = NewError(0x0010).WithName("Valid").WithDesc("valid-有效")
 	Invalid           = NewError(0x0011).WithName("Invalid").WithDesc("invalid-无效")
 	Available         = NewError(0x0020).WithName("Available").WithDesc("available-可用")
@@ -59,10 +60,15 @@ var (
 	Link              = NewError(0x01c0).WithName("Link").WithDesc("link-链接")
 	System            = NewError(0x01d0).WithName("System").WithDesc("system-系统")
 	Param             = NewError(0x01e0).WithName("Param").WithDesc("parameter-参数")
+	ParamNotSupport   = NewError(0x01e1).WithName("ParamNotSupport").WithDesc("parameter-not-support-参数不支持")
 	Packet            = NewError(0x01f0).WithName("Packet").WithDesc("packet-数据包")
 	Config            = NewError(0x0200).WithName("Config").WithDesc("config-配置")
 	Overload          = NewError(0x0210).WithName("Overload").WithDesc("overload-过载")
 	Nil               = NewError(0x0220).WithName("Nil").WithDesc("nil-空")
+	Format            = NewError(0x0230).WithName("Format").WithDesc("format-格式")
+	InterfaceNotMatch = NewError(0x0240).WithName("InterfaceNotMatch").WithDesc("interface-not-match-接口不匹配")
+	NoBehavior        = NewError(0x0250).WithName("NoBehavior").WithDesc("no-behavior-没有对应的行为")
+	Disconnect        = NewError(0x0260).WithName("Disconnect").WithDesc("disconnect-断开连接")
 	// 协程
 	GoroutinePanic = NewError(0x0a00).WithName("GoroutinePanic").WithDesc("goroutine-panic-协程-panic")
 	GoroutineDone  = NewError(0x0a10).WithName("GoroutineDone").WithDesc("goroutine-done-协程-结束")
@@ -75,6 +81,11 @@ var (
 	ChannelNotClosed = NewError(0x0c20).WithName("ChannelNotClosed").WithDesc("channel-not-closed-通道-未关闭")
 	ChannelClosed    = NewError(0x0c30).WithName("ChannelClosed").WithDesc("channel-closed-通道-已关闭")
 	ChannelNil       = NewError(0x0c40).WithName("ChannelNil").WithDesc("channel-通道-未初始化")
+	// grpc
+	GRPCNotFoundShardKey       = NewError(0x0d00).WithName("GRPCNotFoundShardKey").WithDesc("grpc-not-found-shard-key-未找到")
+	GRPCInvalidMethod          = NewError(0x0d10).WithName("GRPCInvalidMethod").WithDesc("grpc-invalid-method-无效方法")
+	GRPCNotSupportShardKeyType = NewError(0x0d20).WithName("GRPCNotSupportShardKeyType").WithDesc("grpc-not-support-shard-key-type-不支持的shard key类型")
+	GRPCServiceNotFound        = NewError(0x0d30).WithName("GRPCServiceNotFound").WithDesc("grpc-service-not-found-服务未找到")
 	// 操作
 	Insert    = NewError(0xf010).WithName("Insert").WithDesc("insert-插入")
 	Find      = NewError(0xf020).WithName("Find").WithDesc("find-查找")

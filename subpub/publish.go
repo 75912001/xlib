@@ -3,5 +3,5 @@
 package subpub
 
 type IPublish interface {
-	Publish(key uint64, parameters ...interface{}) error
+	Publish(key uint64, args ...any) error // 发布
 }

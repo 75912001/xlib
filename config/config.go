@@ -5,135 +5,274 @@
 package config
 
 import (
-	"fmt"
-	xcommon "github.com/75912001/xlib/common"
-	xerror "github.com/75912001/xlib/error"
-	xetcd "github.com/75912001/xlib/etcd"
-	xnetcommon "github.com/75912001/xlib/net/common"
 	xruntime "github.com/75912001/xlib/runtime"
-	xtimer "github.com/75912001/xlib/timer"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
-	"path/filepath"
-	"runtime"
-	"time"
+	"os"
 )
+
+var GConfigMgr = NewMgr()
 
 // 配置-主项,用户服务的基本配置
 
 type Mgr struct {
-	Root   rootYaml
-	Config configYaml
+	ExecutablePath string         // 绝对路径
+	Content        string         // 内容
+	Etcd           Etcd           `yaml:"etcd"`
+	Base           Base           `yaml:"base"`
+	Log            Log            `yaml:"log"`
+	Timer          Timer          `yaml:"timer"`
+	Net            []*Net         `yaml:"net"`
+	KCP            KCP            `yaml:"kcp"`
+	Grpc           Grpc           `yaml:"grpc"`
+	Redis          []*Redis       `yaml:"redis"`
+	Nats           []*Nats        `yaml:"nats"`
+	Custom         map[string]any `yaml:"custom"` // 自定义配置，支持各模块自行解析
+	//# 自定义配置区域
+	//custom:
+	//# string
+	//testString: hello
+	//# int/uint32
+	//maxConnections: 1000
+	//# bool
+	//enableDebug: true
 }
 
-type rootYaml struct {
-	Etcd Etcd `yaml:"etcd"`
+func NewMgr() *Mgr {
+	return &Mgr{}
 }
 
-func (p *rootYaml) Parse(strYaml string) error {
-	if err := yaml.Unmarshal([]byte(strYaml), &p); err != nil {
-		return errors.WithMessage(err, xruntime.Location())
-	}
-	if p.Etcd.TTL == nil {
-		defaultValue := xetcd.TtlSecondDefault
-		p.Etcd.TTL = &defaultValue
-	}
-	return nil
-}
-
-type Etcd struct {
-	Addrs []string `yaml:"addrs"` // etcd地址
-	TTL   *int64   `yaml:"ttl"`   // ttl 秒 [default]: xetcd.TtlSecondDefault 秒, e.g.:系统每10秒续约一次,该参数至少为11秒
-}
-
-type configYaml struct {
-	Base      Base                 `yaml:"base"`
-	Timer     Timer                `yaml:"timer"`
-	ServerNet []*xcommon.ServerNet `yaml:"serverNet"`
-}
-
-func (p *configYaml) Parse(yamlString string) error {
-	err := yaml.Unmarshal([]byte(yamlString), p)
+func (p *Mgr) Parse(executablePath string) error {
+	p.ExecutablePath = executablePath
+	content, err := os.ReadFile(p.ExecutablePath)
 	if err != nil {
-		return errors.WithMessage(err, xruntime.Location())
+		return errors.WithMessagef(err, "read file %v failed. %v", p.ExecutablePath, xruntime.Location())
 	}
-	if p.Base.ProjectName == nil {
-		return errors.WithMessage(err, xruntime.Location())
+	p.Content = string(content)
+
+	if err := yaml.Unmarshal([]byte(p.Content), &p); err != nil {
+		return errors.WithMessagef(err, "unmarshal file %v failed. %v", p.ExecutablePath, xruntime.Location())
 	}
-	if p.Base.Version == nil {
-		return errors.WithMessage(err, xruntime.Location())
+	if err := p.Etcd.Configure(); err != nil {
+		return errors.WithMessagef(err, "etcd configure failed. %v", xruntime.Location())
 	}
-	if p.Base.LogLevel == nil {
-		return errors.WithMessage(err, xruntime.Location())
+	if err := p.Base.Configure(); err != nil {
+		return errors.WithMessagef(err, "base configure failed. %v", xruntime.Location())
 	}
-	if p.Base.LogAbsPath == nil {
-		executablePath, err := xruntime.GetExecutablePath()
-		if err != nil {
-			return errors.WithMessage(err, xruntime.Location())
+	if err := p.Log.Configure(); err != nil {
+		return errors.WithMessagef(err, "log configure failed. %v", xruntime.Location())
+	}
+	if err := p.Timer.Configure(); err != nil {
+		return errors.WithMessagef(err, "timer configure failed. %v", xruntime.Location())
+	}
+	for _, v := range p.Net {
+		if err := v.Configure(); err != nil {
+			return errors.WithMessagef(err, "net configure failed. %v", xruntime.Location())
 		}
-		executablePath = filepath.Join(executablePath, "log")
-		p.Base.LogAbsPath = &executablePath
 	}
-	if p.Base.GoMaxProcess == nil {
-		defaultValue := runtime.NumCPU()
-		p.Base.GoMaxProcess = &defaultValue
+	if err := p.KCP.Configure(); err != nil {
+		return errors.WithMessagef(err, "kcp configure failed. %v", xruntime.Location())
 	}
-	if p.Base.BusChannelCapacity == nil {
-		return errors.WithMessage(err, xruntime.Location())
+	if err := p.Grpc.Configure(); err != nil {
+		return errors.WithMessagef(err, "grpc configure failed. %v", xruntime.Location())
 	}
-	if p.Base.PacketLengthMax == nil {
-		return errors.WithMessage(err, xruntime.Location())
-	}
-	if p.Base.SendChannelCapacity == nil {
-		return errors.WithMessage(err, xruntime.Location())
-	}
-	if p.Base.RunMode == nil {
-		return errors.WithMessage(err, xruntime.Location())
-	}
-	if p.Base.AvailableLoad == nil {
-		return errors.WithMessage(err, xruntime.Location())
-	}
-	if p.Timer.ScanSecondDuration == nil {
-		defaultValue := xtimer.ScanSecondDurationDefault
-		p.Timer.ScanSecondDuration = &defaultValue
-	}
-	if p.Timer.ScanMillisecondDuration == nil {
-		defaultValue := xtimer.ScanMillisecondDurationDefault
-		p.Timer.ScanMillisecondDuration = &defaultValue
-	}
-	for _, v := range p.ServerNet {
-		if v.Addr == nil {
-			defaultValue := ""
-			v.Addr = &defaultValue
+	for _, v := range p.Redis {
+		if err := v.Configure(); err != nil {
+			return errors.WithMessagef(err, "redis configure failed. %v", xruntime.Location())
 		}
-		if v.Type == nil {
-			defaultValue := xnetcommon.ServerNetTypeNameTCP
-			v.Type = &defaultValue
-		}
-		if *v.Type != xnetcommon.ServerNetTypeNameTCP && *v.Type != xnetcommon.ServerNetTypeNameKCP {
-			return xerror.NotImplemented.WithExtraMessage(fmt.Sprintf("serviceNet.type must be tcp or kcp. %x", xruntime.Location()))
+	}
+	for _, v := range p.Nats {
+		if err := v.Configure(); err != nil {
+			return errors.WithMessagef(err, "nats configure failed. %v", xruntime.Location())
 		}
 	}
 	return nil
 }
 
-type Base struct {
-	ProjectName         *string `yaml:"projectName"`         // 项目名称
-	Version             *string `yaml:"version"`             // 版本号
-	PprofHttpPort       *uint16 `yaml:"pprofHttpPort"`       // pprof性能分析 http端口 [default]: nil 不使用
-	LogLevel            *uint32 `yaml:"logLevel"`            // 日志等级
-	LogAbsPath          *string `yaml:"logAbsPath"`          // 日志绝对路径 [default]: 当前执行的程序-绝对路径,指向启动当前进程的可执行文件-目录路径. e.g.:absPath/log
-	GoMaxProcess        *int    `yaml:"goMaxProcess"`        // [default]: runtime.NumCPU()
-	BusChannelCapacity  *uint32 `yaml:"busChannelCapacity"`  // 总线chan容量
-	PacketLengthMax     *uint32 `yaml:"packetLengthMax"`     // bytes,用户 上行 每个包的最大长度
-	SendChannelCapacity *uint32 `yaml:"sendChannelCapacity"` // bytes,每个TCP链接的发送chan大小
-	RunMode             *uint32 `yaml:"runMode"`             // 运行模式 [0:release 1:debug]
-	AvailableLoad       *uint32 `yaml:"availableLoad"`       // 剩余可用负载, 可用资源数
+// GetCustomUint32 获取 uint32 类型的配置值
+func (p *Mgr) GetCustomUint32(key string, defaultValue ...uint32) uint32 {
+	var dv uint32
+	if len(defaultValue) == 0 {
+		dv = 0
+	} else {
+		dv = defaultValue[0]
+	}
+	if p.Custom == nil {
+		return dv
+	}
+
+	val, exists := p.Custom[key]
+	if !exists {
+		return dv
+	}
+
+	// 处理多种可能的类型
+	switch v := val.(type) {
+	case int:
+		return uint32(v)
+	case int32:
+		return uint32(v)
+	case int64:
+		return uint32(v)
+	case uint32:
+		return v
+	case uint64:
+		return uint32(v)
+	case float64: // YAML 解析数字时可能是 float64
+		return uint32(v)
+	default:
+		return dv
+	}
 }
 
-type Timer struct {
-	// 秒级定时器 扫描间隔(纳秒) 1000*1000*100=100000000 为100毫秒 [default]: xtimer.ScanSecondDurationDefault
-	ScanSecondDuration *time.Duration `yaml:"scanSecondDuration"`
-	// 毫秒级定时器 扫描间隔(纳秒) 1000*1000*100=100000000 为25毫秒 [default]: xtimer.ScanMillisecondDurationDefault
-	ScanMillisecondDuration *time.Duration `yaml:"scanMillisecondDuration"`
+func (p *Mgr) GetCustomInt64(key string, defaultValue ...int64) int64 {
+	var dv int64
+	if len(defaultValue) == 0 {
+		dv = 0
+	} else {
+		dv = defaultValue[0]
+	}
+	if p.Custom == nil {
+		return dv
+	}
+
+	val, exists := p.Custom[key]
+	if !exists {
+		return dv
+	}
+
+	switch v := val.(type) {
+	case int:
+		return int64(v)
+	case int32:
+		return int64(v)
+	case int64:
+		return v
+	case uint32:
+		return int64(v)
+	case uint64:
+		return int64(v)
+	case float64:
+		return int64(v)
+	default:
+		return dv
+	}
+}
+
+func (p *Mgr) GetCustomUint64(key string, defaultValue ...uint64) uint64 {
+	var dv uint64
+	if len(defaultValue) == 0 {
+		dv = 0
+	} else {
+		dv = defaultValue[0]
+	}
+	if p.Custom == nil {
+		return dv
+	}
+
+	val, exists := p.Custom[key]
+	if !exists {
+		return dv
+	}
+
+	// 处理多种可能的类型
+	switch v := val.(type) {
+	case int:
+		return uint64(v)
+	case int32:
+		return uint64(v)
+	case int64:
+		return uint64(v)
+	case uint32:
+		return uint64(v)
+	case uint64:
+		return v
+	case float64: // YAML 解析数字时可能是 float64
+		return uint64(v)
+	default:
+		return dv
+	}
+}
+
+// GetCustomInt 获取 int 类型的配置值（额外提供）
+func (p *Mgr) GetCustomInt(key string, defaultValue ...int) int {
+	var dv int
+	if len(defaultValue) == 0 {
+		dv = 0
+	} else {
+		dv = defaultValue[0]
+	}
+	if p.Custom == nil {
+		return dv
+	}
+
+	val, exists := p.Custom[key]
+	if !exists {
+		return dv
+	}
+
+	switch v := val.(type) {
+	case int:
+		return v
+	case int32:
+		return int(v)
+	case int64:
+		return int(v)
+	case uint32:
+		return int(v)
+	case uint64:
+		return int(v)
+	case float64:
+		return int(v)
+	default:
+		return dv
+	}
+}
+
+// GetCustomString 获取 string 类型的配置值
+func (p *Mgr) GetCustomString(key string, defaultValue ...string) string {
+	var dv string
+	if len(defaultValue) == 0 {
+		dv = ""
+	} else {
+		dv = defaultValue[0]
+	}
+	if p.Custom == nil {
+		return dv
+	}
+
+	val, exists := p.Custom[key]
+	if !exists {
+		return dv
+	}
+
+	if str, ok := val.(string); ok {
+		return str
+	}
+
+	return dv
+}
+
+// GetCustomBool 获取 bool 类型的配置值（额外提供）
+func (p *Mgr) GetCustomBool(key string, defaultValue ...bool) bool {
+	var dv bool
+	if len(defaultValue) == 0 {
+		dv = false
+	} else {
+		dv = defaultValue[0]
+	}
+	if p.Custom == nil {
+		return dv
+	}
+
+	val, exists := p.Custom[key]
+	if !exists {
+		return dv
+	}
+
+	if b, ok := val.(bool); ok {
+		return b
+	}
+
+	return dv
 }

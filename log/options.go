@@ -1,6 +1,7 @@
 package log
 
 import (
+	xcontrol "github.com/75912001/xlib/control"
 	xruntime "github.com/75912001/xlib/runtime"
 	"github.com/pkg/errors"
 	"os"
@@ -54,17 +55,19 @@ func (p *options) WithEntryPoolOptions(entryPoolOptions *entryPoolOptions) *opti
 	return p
 }
 
-func (p *options) WithLevelCallBack(callbackFunc CallBackFunc, subLevel ...uint32) *options {
+func (p *options) WithLevelCallBack(callback xcontrol.ICallBack, subLevel ...uint32) *options {
 	p.levelSubscribe = newLevelSubscribe()
-	p.levelSubscribe.callBackFunc = callbackFunc
+	p.levelSubscribe.callBack = callback
 	for _, level := range subLevel {
-		p.levelSubscribe.subMap[level] = struct{}{}
+		p.levelSubscribe.subMapMgr.Add(level, struct{}{})
 	}
 	return p
 }
 
 // merge combines the given *options into a single *options in a last one wins fashion.
-// The specified options are merged with the existing options on the server, with the specified options taking
+//
+//	The specified options are merged with the existing options on the server, with the specified options taking
+//
 // precedence.
 func (p *options) merge(opts ...*options) *options {
 	for _, opt := range opts {
@@ -103,15 +106,11 @@ func (p *options) configure() error {
 		p.level = &level
 	}
 	if p.absPath == nil {
-		executablePath, err := xruntime.GetExecutablePath()
-		if err != nil {
-			return errors.WithMessage(err, xruntime.Location())
-		}
-		executablePath = filepath.Join(executablePath, "log")
+		executablePath := filepath.Join(xruntime.ExecutablePath, "log")
 		p.absPath = &executablePath
 	}
 	if err := os.MkdirAll(*p.absPath, os.ModePerm); err != nil {
-		return errors.WithMessage(err, xruntime.Location())
+		return errors.WithMessagef(err, "mkdir all failed. %v", xruntime.Location())
 	}
 	if p.isReportCaller == nil {
 		var reportCaller = true
@@ -120,7 +119,7 @@ func (p *options) configure() error {
 	if p.namePrefix == nil {
 		executableName, err := xruntime.GetExecutableName()
 		if err != nil {
-			return errors.WithMessage(err, xruntime.Location())
+			return errors.WithMessagef(err, "get executable name failed. %v", xruntime.Location())
 		}
 		p.namePrefix = &executableName
 	}
@@ -132,7 +131,7 @@ func (p *options) configure() error {
 		p.entryPoolOptions = newEntryPoolOptions()
 	}
 	if err := p.entryPoolOptions.configure(); err != nil {
-		return errors.WithMessage(err, xruntime.Location())
+		return errors.WithMessagef(err, "configure entry pool options failed. %v", xruntime.Location())
 	}
 	return nil
 }

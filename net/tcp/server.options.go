@@ -1,8 +1,10 @@
 package tcp
 
 import (
+	xcontrol "github.com/75912001/xlib/control"
 	xerror "github.com/75912001/xlib/error"
 	xnetcommon "github.com/75912001/xlib/net/common"
+	xpacket "github.com/75912001/xlib/packet"
 	xruntime "github.com/75912001/xlib/runtime"
 	"github.com/pkg/errors"
 )
@@ -10,10 +12,13 @@ import (
 // ServerOptions contains options to configure a Server instance. Each option can be set through setter functions. See
 // documentation for each setter function for an explanation of the option.
 type ServerOptions struct {
-	listenAddress    *string            // 127.0.0.1:8787
-	eventChan        chan<- interface{} // 待处理的事件
-	sendChanCapacity *uint32            // 发送 channel 大小
-	connOptions      xnetcommon.ConnOptions
+	listenAddress    *string // 127.0.0.1:8787
+	iOut             xcontrol.IOut
+	sendChanCapacity *uint32 // 发送 channel 大小
+	HeaderStrategy   xpacket.IHeaderStrategy
+	xnetcommon.ConnOptions
+	xnetcommon.PacketLimitOptions
+	isActor *bool // 是否是 Actor 模式, 如果是则会使用 Actor 来处理连接的事件 default: false
 }
 
 // NewServerOptions 新的ServerOptions
@@ -26,8 +31,8 @@ func (p *ServerOptions) WithListenAddress(listenAddress string) *ServerOptions {
 	return p
 }
 
-func (p *ServerOptions) WithEventChan(eventChan chan<- interface{}) *ServerOptions {
-	p.eventChan = eventChan
+func (p *ServerOptions) WithIOut(iOut xcontrol.IOut) *ServerOptions {
+	p.iOut = iOut
 	return p
 }
 
@@ -36,13 +41,13 @@ func (p *ServerOptions) WithSendChanCapacity(sendChanCapacity uint32) *ServerOpt
 	return p
 }
 
-func (p *ServerOptions) WithReadBuffer(readBuffer int) *ServerOptions {
-	p.connOptions.ReadBuffer = &readBuffer
+func (p *ServerOptions) WithHeaderStrategy(strategy xpacket.IHeaderStrategy) *ServerOptions {
+	p.HeaderStrategy = strategy
 	return p
 }
 
-func (p *ServerOptions) WithWriteBuffer(writeBuffer int) *ServerOptions {
-	p.connOptions.WriteBuffer = &writeBuffer
+func (p *ServerOptions) WithIsActor(isActor bool) *ServerOptions {
+	p.isActor = &isActor
 	return p
 }
 
@@ -58,32 +63,47 @@ func mergeServerOptions(opts ...*ServerOptions) *ServerOptions {
 		if opt.listenAddress != nil {
 			newOptions.WithListenAddress(*opt.listenAddress)
 		}
-		if opt.eventChan != nil {
-			newOptions.WithEventChan(opt.eventChan)
+		if opt.iOut != nil {
+			newOptions.WithIOut(opt.iOut)
 		}
 		if opt.sendChanCapacity != nil {
 			newOptions.WithSendChanCapacity(*opt.sendChanCapacity)
 		}
-		if opt.connOptions.ReadBuffer != nil {
-			newOptions.WithReadBuffer(*opt.connOptions.ReadBuffer)
+		if opt.HeaderStrategy != nil {
+			newOptions.WithHeaderStrategy(opt.HeaderStrategy)
 		}
-		if opt.connOptions.WriteBuffer != nil {
-			newOptions.WithWriteBuffer(*opt.connOptions.WriteBuffer)
+		newOptions.ConnOptions.Merge(&opt.ConnOptions)
+		newOptions.PacketLimitOptions.Merge(&opt.PacketLimitOptions)
+		if opt.isActor != nil {
+			newOptions.WithIsActor(*opt.isActor)
 		}
 	}
 	return newOptions
 }
 
 // 配置
-func serverConfigure(opts *ServerOptions) error {
+func configureServerOptions(opts *ServerOptions) error {
 	if opts.listenAddress == nil {
-		return errors.WithMessage(xerror.Param, xruntime.Location())
+		return errors.WithMessagef(xerror.Param, "listenAddress is nil. %v", xruntime.Location())
 	}
-	if opts.eventChan == nil {
-		return errors.WithMessage(xerror.Param, xruntime.Location())
+	if opts.iOut == nil {
+		return errors.WithMessagef(xerror.Param, "iOut is nil. %v", xruntime.Location())
 	}
 	if opts.sendChanCapacity == nil {
-		return errors.WithMessage(xerror.Param, xruntime.Location())
+		return errors.WithMessagef(xerror.Param, "sendChanCapacity is nil. %v", xruntime.Location())
+	}
+	if opts.HeaderStrategy == nil {
+		return errors.WithMessagef(xerror.Param, "HeaderStrategy is nil. %v", xruntime.Location())
+	}
+	if opts.ConnOptions.Configure() != nil {
+		return errors.WithMessagef(xerror.Param, "ConnOptions.Configure() is not nil. %v", xruntime.Location())
+	}
+	if opts.PacketLimitOptions.Configure() != nil {
+		return errors.WithMessagef(xerror.Param, "PacketLimitOptions.Configure() is not nil. %v", xruntime.Location())
+	}
+	if opts.isActor == nil {
+		var isActor = false
+		opts.isActor = &isActor
 	}
 	return nil
 }

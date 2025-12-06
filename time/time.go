@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+var GTimeMgr = NewMgr()
+
 // Mgr 时间管理器
 type Mgr struct {
 	timestampSecond       int64                  // 上一次调用Update更新的时间戳-秒
@@ -46,4 +48,18 @@ func (p *Mgr) ShadowTimestamp() int64 {
 // SetTimestampOffset 设置 时间戳偏移量-秒
 func (p *Mgr) SetTimestampOffset(offset int64) {
 	p.timestampSecondOffset = offset
+}
+
+// GetTimestampOffset 获取 时间戳偏移量-秒
+func (p *Mgr) GetTimestampOffset() int64 {
+	return p.timestampSecondOffset
+}
+
+// GetMillisecond 获取-毫秒时间戳
+func (p *Mgr) GetMillisecond() int64 {
+	return p.timestampMillisecond
+}
+
+func (p *Mgr) GetTime() time.Time {
+	return p.time
 }

@@ -2,6 +2,8 @@ package kcp
 
 import (
 	"context"
+	xconfig "github.com/75912001/xlib/config"
+	xcontrol "github.com/75912001/xlib/control"
 	xerror "github.com/75912001/xlib/error"
 	xlog "github.com/75912001/xlib/log"
 	xnetcommon "github.com/75912001/xlib/net/common"
@@ -14,7 +16,6 @@ import (
 
 // Server 服务端
 type Server struct {
-	IEvent   xnetcommon.IEvent
 	IHandler xnetcommon.IHandler
 	listener *kcp.Listener //监听
 	options  *ServerOptions
@@ -23,7 +24,6 @@ type Server struct {
 // NewServer 新建服务
 func NewServer(handler xnetcommon.IHandler) *Server {
 	return &Server{
-		IEvent:   nil,
 		IHandler: handler,
 		listener: nil,
 		options:  nil,
@@ -36,25 +36,18 @@ func (p *Server) Start(_ context.Context, opts ...*ServerOptions) error {
 	if err := serverConfigure(p.options); err != nil {
 		return errors.WithMessage(err, xruntime.Location())
 	}
-	p.IEvent = xnetcommon.NewEvent(p.options.eventChan)
-
 	var err error
-	if p.options.fec == nil || !*p.options.fec { //FEC 不启用
-		if p.listener, err = kcp.ListenWithOptions(*p.options.listenAddress, p.options.blockCrypt, 0, 0); err != nil {
-			return errors.WithMessage(err, xruntime.Location())
-		}
-	} else { //FEC 启用
-		if p.listener, err = kcp.ListenWithOptions(*p.options.listenAddress, p.options.blockCrypt, 10, 3); err != nil {
+	if p.listener, err = kcp.ListenWithOptions(*p.options.listenAddress,
+		p.options.KCPOptions.BlockCrypt, *p.options.KCPOptions.DataShards, *p.options.KCPOptions.ParityShards); err != nil {
+		return errors.WithMessage(err, xruntime.Location())
+	}
+	if p.options.ConnOptions.WriteBuffer != nil {
+		if err = p.listener.SetWriteBuffer(*p.options.ConnOptions.WriteBuffer); err != nil {
 			return errors.WithMessage(err, xruntime.Location())
 		}
 	}
-	if p.options.connOptions.WriteBuffer != nil {
-		if err := p.listener.SetWriteBuffer(*p.options.connOptions.WriteBuffer); err != nil {
-			return errors.WithMessage(err, xruntime.Location())
-		}
-	}
-	if p.options.connOptions.ReadBuffer != nil {
-		if err := p.listener.SetReadBuffer(*p.options.connOptions.ReadBuffer); err != nil {
+	if p.options.ConnOptions.ReadBuffer != nil {
+		if err = p.listener.SetReadBuffer(*p.options.ConnOptions.ReadBuffer); err != nil {
 			return errors.WithMessage(err, xruntime.Location())
 		}
 	}
@@ -77,20 +70,21 @@ func (p *Server) Start(_ context.Context, opts ...*ServerOptions) error {
 				}
 				continue
 			}
-			if p.options.mtuBytes != nil {
-				if !udpSession.SetMtu(*p.options.mtuBytes) {
-					xlog.PrintfErr("SetMtu false. mtuBytes:%v", *p.options.mtuBytes)
+			if p.options.KCPOptions.Mtu != nil {
+				if !udpSession.SetMtu(*p.options.KCPOptions.Mtu) {
+					xlog.PrintfErr("SetMtu false. mtuBytes:%v", *p.options.KCPOptions.Mtu)
 				}
 			}
-			if p.options.windowSize != nil {
-				udpSession.SetWindowSize(*p.options.windowSize, *p.options.windowSize)
+			if p.options.KCPOptions.SndWindowSize != nil {
+				udpSession.SetWindowSize(*p.options.KCPOptions.SndWindowSize, *p.options.KCPOptions.RcvWindowSize)
 			}
-			if p.options.ackNoDelay != nil {
-				udpSession.SetACKNoDelay(*p.options.ackNoDelay)
+			if p.options.KCPOptions.AckNodelay != nil {
+				udpSession.SetACKNoDelay(*p.options.KCPOptions.AckNodelay)
 			}
 			//Turbo Mode： (1, 10, 2, 1);
-			udpSession.SetNoDelay(1, 20, 2, 1)
-			go p.handleConn(udpSession)
+			//Normal Mode: (1, 20, 2, 1)
+			udpSession.SetNoDelay(1, 10, 2, 1)
+			go p.handleConn(udpSession, p.options.iOut)
 		}
 	}()
 	return nil
@@ -106,13 +100,20 @@ func (p *Server) Stop() {
 	}
 }
 
-func (p *Server) handleConn(udpSession *kcp.UDPSession) {
-	remote := NewRemote(udpSession, make(chan interface{}, *p.options.sendChanCapacity))
+func (p *Server) handleConn(udpSession *kcp.UDPSession, iOut xcontrol.IOut) {
+	remote := NewRemote(udpSession, make(chan interface{}, *p.options.sendChanCapacity), p.options.HeaderStrategy)
+	remote.PacketLimit = p.options.NewPacketLimitFunc(p.options.MaxCntPerSec)
 	xlog.PrintfInfo("accept from UDPSession:%p, conv:%v, RemoteAddr.Network:%v, RemoteAddr.String:%v, remote:%p",
 		udpSession, udpSession.GetConv(), udpSession.RemoteAddr().Network(), udpSession.RemoteAddr().String(), remote)
-	if err := p.IEvent.Connect(p.IHandler, remote); err != nil {
-		xlog.PrintfErr("event.Connect err:%v", err)
-		return
+	if xconfig.GConfigMgr.Base.ProcessingModeIsActor() {
+		_ = p.IHandler.OnConnect(remote)
+	} else {
+		iOut.Send(
+			&xnetcommon.Connect{
+				IHandler: p.IHandler,
+				IRemote:  remote,
+			},
+		)
 	}
-	remote.Start(&p.options.connOptions, p.IEvent, p.IHandler)
+	remote.Start(&p.options.ConnOptions, iOut, p.IHandler)
 }

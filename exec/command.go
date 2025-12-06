@@ -7,19 +7,18 @@ import (
 	"os/exec"
 )
 
-// Command 调用 linux 命令 todo menglc 是否需要
+// Command 调用 linux 命令
 //
-//	参数:
-//		args:"chmod +x /xx/xx/x.sh"
+//	args:"chmod +x /xx/xx/x.sh"
 func Command(args string) (outStr string, errStr string, err error) {
 	var stdout, stderr bytes.Buffer
 	cmd := exec.Command("/bin/bash", "-c", args)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err = cmd.Run()
-	outStr, errStr = string(stdout.Bytes()), string(stderr.Bytes())
+	outStr, errStr = stdout.String(), stderr.String()
 	if err != nil {
-		return outStr, errStr, errors.WithMessage(err, xruntime.Location())
+		return outStr, errStr, errors.WithMessagef(err, "run command failed. %v", xruntime.Location())
 	}
 	return outStr, errStr, nil
 }

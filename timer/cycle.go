@@ -5,7 +5,7 @@ import (
 )
 
 // 时间轮数量
-const cycleSize int = 9
+const cycleSize int = 33
 
 // 时间轮持续时间
 //
@@ -14,7 +14,7 @@ const cycleSize int = 9
 var cycleDuration [cycleSize]int64 //nolint:all // 包内 全局变量
 
 func init() { //nolint:all // 初始化
-	for i := 0; i < len(cycleDuration); i++ {
+	for i := range cycleDuration {
 		cycleDuration[i] = genDuration(i)
 	}
 	cycleDuration[cycleSize-1] = math.MaxInt64
@@ -24,34 +24,25 @@ func init() { //nolint:all // 初始化
 //
 //	参数:
 //		轮序号
-//	返回值:
-//		4,8,16,32,64,128,256,512,math.MaxInt64
+//		返回值: 2,4,6,8,12,16,20,24,32,40,48,56,72,88,104,120,152,184,216,248,312,376,440,504,632,760,888,1016,1272,1528,1784,2040,math.MaxInt64
 func genDuration(idx int) int64 {
-	const shift = 2 // 偏移量
-	return int64(1 << uint(idx+shift))
+	base := int64(2) // 初始步长
+	stepCount := 4   // 步长递增的槽数间隔
+	// 计算当前步长
+	curStep := base << uint(idx/stepCount)
+	// 计算当前槽的起始值
+	prevSum := int64(0)
+	for i := range idx {
+		prevStep := base << uint(i/stepCount)
+		prevSum += prevStep
+	}
+	return prevSum + curStep
 }
 
-//// 根据 时长 找到时间轮的序号
-//// (当前为从头依次判断,适用于大多数数据 符合头部条件,若数据均匀分布,则适用于使用二分查找)
-////
-////	参数:
-////		duration:时长
-////	返回值:
-////		轮序号
-//func findCycleIdx(duration int64) (idx int) {
-//	for k, v := range cycleDuration {
-//		if duration <= v {
-//			return k
-//		} else {
-//			idx++
-//		}
-//	}
-//	return len(cycleDuration) - 1
-//}
-
 // 根据 时长 找到时间轮的序号 二分查找 (迭代)
-func searchCycleIdxIteration(duration int64) int {
-	low, high := 0, len(cycleDuration)-1
+func searchCycleIdx(duration int64) int {
+	const h = len(cycleDuration) - 1
+	low, high := 0, h
 	for low <= high {
 		mid := low + (high-low)/2 //nolint:all // 二分法,2:从中间取
 		if low == high {

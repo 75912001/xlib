@@ -1,27 +1,25 @@
 package kcp
 
 import (
+	xcontrol "github.com/75912001/xlib/control"
 	xerror "github.com/75912001/xlib/error"
 	xnetcommon "github.com/75912001/xlib/net/common"
+	xpacket "github.com/75912001/xlib/packet"
 	xruntime "github.com/75912001/xlib/runtime"
 	"github.com/pkg/errors"
-	"github.com/xtaci/kcp-go/v5"
 )
 
 // ServerOptions contains options to serverConfigure a Server instance. Each option can be set through setter functions. See
 // documentation for each setter function for an explanation of the option.
-// TODO 修改源码中 minrto 为10ms
 type ServerOptions struct {
-	listenAddress    *string            //监听地址 e.g.:xxx.xxx.xxx.xxx:8899
-	eventChan        chan<- interface{} // 待处理的事件
-	sendChanCapacity *uint32            // 发送 channel 大小
-	connOptions      xnetcommon.ConnOptions
-
-	blockCrypt kcp.BlockCrypt //加密,解密
-	mtuBytes   *int           //e.g.: 1350
-	windowSize *int           //e.g.: 512
-	fec        *bool          //是否启用FEC
-	ackNoDelay *bool          // send ack immediately for each incoming packet(testing purpose)
+	listenAddress    *string //监听地址 e.g.:xxx.xxx.xxx.xxx:8899
+	iOut             xcontrol.IOut
+	sendChanCapacity *uint32 // 发送 channel 大小
+	HeaderStrategy   xpacket.IHeaderStrategy
+	xnetcommon.ConnOptions
+	xnetcommon.KCPOptions
+	xnetcommon.PacketLimitOptions
+	isActor *bool // 是否是 Actor 模式, 如果是则会使用 Actor 来处理连接的事件 default: false
 }
 
 // NewOptions 新的Options
@@ -34,8 +32,8 @@ func (p *ServerOptions) WithListenAddress(listenAddress string) *ServerOptions {
 	return p
 }
 
-func (p *ServerOptions) WithEventChan(eventChan chan<- interface{}) *ServerOptions {
-	p.eventChan = eventChan
+func (p *ServerOptions) WithIOut(iOut xcontrol.IOut) *ServerOptions {
+	p.iOut = iOut
 	return p
 }
 
@@ -44,38 +42,13 @@ func (p *ServerOptions) WithSendChanCapacity(sendChanCapacity uint32) *ServerOpt
 	return p
 }
 
-func (p *ServerOptions) WithReadBuffer(readBuffer int) *ServerOptions {
-	p.connOptions.ReadBuffer = &readBuffer
+func (p *ServerOptions) WithHeaderStrategy(strategy xpacket.IHeaderStrategy) *ServerOptions {
+	p.HeaderStrategy = strategy
 	return p
 }
 
-func (p *ServerOptions) WithWriteBuffer(writeBuffer int) *ServerOptions {
-	p.connOptions.WriteBuffer = &writeBuffer
-	return p
-}
-
-func (p *ServerOptions) WithBlockCrypt(blockCrypt kcp.BlockCrypt) *ServerOptions {
-	p.blockCrypt = blockCrypt
-	return p
-}
-
-func (p *ServerOptions) WithMTUBytes(size int) *ServerOptions {
-	p.mtuBytes = &size
-	return p
-}
-
-func (p *ServerOptions) WithWindowSize(size int) *ServerOptions {
-	p.windowSize = &size
-	return p
-}
-
-func (p *ServerOptions) WithFEC(fec bool) *ServerOptions {
-	p.fec = &fec
-	return p
-}
-
-func (p *ServerOptions) WithAckNoDelay(ackNoDelay bool) *ServerOptions {
-	p.ackNoDelay = &ackNoDelay
+func (p *ServerOptions) WithIsActor(isActor bool) *ServerOptions {
+	p.isActor = &isActor
 	return p
 }
 
@@ -91,32 +64,20 @@ func mergeServerOptions(opts ...*ServerOptions) *ServerOptions {
 		if opt.listenAddress != nil {
 			so.WithListenAddress(*opt.listenAddress)
 		}
-		if opt.eventChan != nil {
-			so.WithEventChan(opt.eventChan)
+		if opt.iOut != nil {
+			so.WithIOut(opt.iOut)
 		}
 		if opt.sendChanCapacity != nil {
 			so.WithSendChanCapacity(*opt.sendChanCapacity)
 		}
-		if opt.connOptions.ReadBuffer != nil {
-			so.WithReadBuffer(*opt.connOptions.ReadBuffer)
+		if opt.HeaderStrategy != nil {
+			so.WithHeaderStrategy(opt.HeaderStrategy)
 		}
-		if opt.connOptions.WriteBuffer != nil {
-			so.WithWriteBuffer(*opt.connOptions.WriteBuffer)
-		}
-		if opt.blockCrypt != nil {
-			so.WithBlockCrypt(opt.blockCrypt)
-		}
-		if opt.mtuBytes != nil {
-			so.WithMTUBytes(*opt.mtuBytes)
-		}
-		if opt.windowSize != nil {
-			so.WithWindowSize(*opt.windowSize)
-		}
-		if opt.fec != nil {
-			so.WithFEC(*opt.fec)
-		}
-		if opt.ackNoDelay != nil {
-			so.WithAckNoDelay(*opt.ackNoDelay)
+		so.ConnOptions.Merge(&opt.ConnOptions)
+		so.KCPOptions.Merge(&opt.KCPOptions)
+		so.PacketLimitOptions.Merge(&opt.PacketLimitOptions)
+		if opt.isActor != nil {
+			so.WithIsActor(*opt.isActor)
 		}
 	}
 	return so
@@ -127,23 +88,27 @@ func serverConfigure(opts *ServerOptions) error {
 	if opts.listenAddress == nil {
 		return errors.WithMessage(xerror.Param, xruntime.Location())
 	}
-	if opts.eventChan == nil {
+	if opts.iOut == nil {
 		return errors.WithMessage(xerror.Param, xruntime.Location())
 	}
 	if opts.sendChanCapacity == nil {
 		return errors.WithMessage(xerror.Param, xruntime.Location())
 	}
-	if opts.blockCrypt == nil {
+	if opts.HeaderStrategy == nil {
 		return errors.WithMessage(xerror.Param, xruntime.Location())
 	}
-	if opts.mtuBytes == nil {
+	if opts.ConnOptions.Configure() != nil {
 		return errors.WithMessage(xerror.Param, xruntime.Location())
 	}
-	if opts.windowSize == nil {
+	if opts.KCPOptions.Configure() != nil {
 		return errors.WithMessage(xerror.Param, xruntime.Location())
 	}
-	if opts.ackNoDelay == nil {
+	if opts.PacketLimitOptions.Configure() != nil {
 		return errors.WithMessage(xerror.Param, xruntime.Location())
+	}
+	if opts.isActor == nil {
+		var isActor = false
+		opts.isActor = &isActor
 	}
 	return nil
 }

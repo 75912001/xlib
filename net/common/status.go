@@ -7,12 +7,16 @@ import (
 
 // 链接状态
 
+// 活跃 -> 非活跃
+//			非活跃 -> 死亡
+//			非活跃 -> 活跃
+
 type Status struct {
 	Inactive       bool               // 非活跃状态
 	InactiveStart  int64              // 非活跃开始时间戳
 	InactiveData   []byte             // 非活跃期间缓存的数据
 	DeathTimestamp int64              // 死亡时间戳
-	DeathCallback  *xcontrol.CallBack // 死亡时回调函数
+	DeathCallback  xcontrol.ICallBack // 死亡时回调函数
 }
 
 func NewStatus() *Status {
@@ -25,11 +29,6 @@ func NewStatus() *Status {
 	}
 }
 
-// 属于非活跃状态的关闭动作
-func (p *Status) InactiveClose() {
-
-}
-
 // 设置活跃
 func (p *Status) SetActive() {
 	p.Inactive = false
@@ -40,7 +39,7 @@ func (p *Status) SetActive() {
 }
 
 // 设置非活跃
-func (p *Status) SetInactive(deathDurationSecond int64, deathCallback *xcontrol.CallBack) {
+func (p *Status) SetInactive(deathDurationSecond int64, deathCallback xcontrol.ICallBack) {
 	p.Inactive = true
 	p.InactiveStart = time.Now().Unix()
 	p.InactiveData = make([]byte, 0)
@@ -48,10 +47,12 @@ func (p *Status) SetInactive(deathDurationSecond int64, deathCallback *xcontrol.
 	p.DeathCallback = deathCallback
 }
 
+// append 缓存
 func (p *Status) AppendCache(data []byte) {
 	p.InactiveData = append(p.InactiveData, data...)
 }
 
+// 获取缓存
 func (p *Status) GetCache() []byte {
 	return p.InactiveData
 }

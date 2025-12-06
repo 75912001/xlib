@@ -3,7 +3,6 @@ package etcd
 import (
 	"encoding/json"
 	"fmt"
-	xcommon "github.com/75912001/xlib/common"
 	xlog "github.com/75912001/xlib/log"
 	"path"
 	"strconv"
@@ -13,10 +12,11 @@ import (
 
 // ValueJson etcd 通讯的数据,由服务中的数据生成,定时更新->etcd->服务
 type ValueJson struct {
-	ServerNet     []*xcommon.ServerNet `json:"serverNet"`     // 有:直接使用. 没有:使用 benchJson.ServerNet
-	Version       string               `json:"version"`       // 有:直接使用. 没有:使用 base.version 生成
-	AvailableLoad uint32               `json:"availableLoad"` // 剩余可用负载, 可用资源数
-	SecondOffset  int32                `json:"secondOffset"`  // 服务 时间(秒)偏移量
+	ServerNet     []*ServerNet `json:"serverNet,omitempty"`     // 有:直接使用. 没有:使用 etcd.ServerNet
+	Version       string       `json:"version,omitempty"`       // 有:直接使用. 没有:使用 base.version 生成
+	AvailableLoad uint32       `json:"availableLoad,omitempty"` // 剩余可用负载, 可用资源数
+	SecondOffset  int64        `json:"secondOffset,omitempty"`  // 服务 时间(秒)偏移量
+	GrpcService   *GrpcService `json:"grpcService,omitempty"`   // gRPC 服务信息
 }
 
 // Parse 解析key

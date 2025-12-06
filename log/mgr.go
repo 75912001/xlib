@@ -8,7 +8,6 @@ package log
 
 import (
 	"context"
-	"fmt"
 	xerror "github.com/75912001/xlib/error"
 	xruntime "github.com/75912001/xlib/runtime"
 	xtime "github.com/75912001/xlib/time"
@@ -28,11 +27,11 @@ func NewMgr(opts ...*options) (ILog, error) {
 	m := &mgr{}
 	err := m.handleOptions(opts...)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithMessagef(err, "handle options failed. %v", xruntime.Location())
 	}
 	err = m.start()
 	if err != nil {
-		return nil, err
+		return nil, errors.WithMessagef(err, "start failed. %v", xruntime.Location())
 	}
 	return m, nil
 }
@@ -51,7 +50,7 @@ type mgr struct {
 func (p *mgr) handleOptions(opts ...*options) error {
 	p.options = NewOptions().merge(opts...)
 	if err := p.options.configure(); err != nil {
-		return errors.WithMessage(err, xruntime.Location())
+		return errors.WithMessagef(err, "configure failed. %v", xruntime.Location())
 	}
 	return nil
 }
@@ -66,7 +65,7 @@ func (p *mgr) start() error {
 	p.timeMgr = xtime.NewMgr()
 	// 初始化各级别的日志输出
 	if err := newWriters(p); err != nil {
-		return errors.WithMessage(err, xruntime.Location())
+		return errors.WithMessagef(err, "new writers failed. %v", xruntime.Location())
 	}
 	p.waitGroupOutPut.Add(1)
 	go func() {
@@ -130,7 +129,7 @@ func doLog(p *mgr) {
 // SetLevel 设置日志等级
 func (p *mgr) SetLevel(level uint32) error {
 	if level < LevelOff || LevelOn < level {
-		return errors.WithMessage(xerror.Level, xruntime.Location())
+		return errors.WithMessagef(xerror.Level, "level is invalid. %v", xruntime.Location())
 	}
 	p.options.WithLevel(level)
 	return nil
@@ -141,18 +140,18 @@ func newWriters(p *mgr) error {
 	// 检查是否要关闭文件
 	for i := range p.openFiles {
 		if err := p.openFiles[i].Close(); err != nil {
-			return errors.WithMessage(err, xruntime.Location())
+			return errors.WithMessagef(err, "close file failed. %v", xruntime.Location())
 		}
 	}
 	second := p.timeMgr.NowTime().Unix()
 	logDuration := p.getLogDuration(second)
 	normalWriter, err := newNormalFileWriter(*p.options.absPath, *p.options.namePrefix, logDuration)
 	if err != nil {
-		return errors.WithMessage(err, xruntime.Location())
+		return errors.WithMessagef(err, "new normal file writer failed. %v", xruntime.Location())
 	}
 	errorWriter, err := newErrorFileWriter(*p.options.absPath, *p.options.namePrefix, logDuration)
 	if err != nil {
-		return errors.WithMessage(err, xruntime.Location())
+		return errors.WithMessagef(err, "new error file writer failed. %v", xruntime.Location())
 	}
 	p.logDuration = logDuration
 	allWriter := io.MultiWriter(normalWriter, errorWriter)
@@ -199,7 +198,8 @@ func (p *mgr) callBack(entry *entry) {
 	if !p.options.levelSubscribe.isSubscribe(entry.level) {
 		return
 	}
-	p.options.levelSubscribe.callBackFunc(entry.level, entry.outString)
+	p.options.levelSubscribe.callBack.Override(entry.level, entry.outString)
+	_ = p.options.levelSubscribe.callBack.Execute()
 }
 
 func (p *mgr) newEntry() *entry {
@@ -207,50 +207,50 @@ func (p *mgr) newEntry() *entry {
 }
 
 // log 记录日志
-func (p *mgr) log(entry *entry, level uint32, v ...interface{}) {
+func (p *mgr) log(entry *entry, level uint32, v ...any) {
 	entry.withLevel(level).
 		withTime(p.timeMgr.NowTime()).
-		withMessage(fmt.Sprint(v...))
+		withMessage("", v...)
 	if *p.options.isReportCaller {
-		pc, _, line, ok := runtime.Caller(calldepth2)
+		pc, file, line, ok := runtime.Caller(calldepth2)
 		funcName := xerror.Unknown.Name()
 		if !ok {
 			line = 0
 		} else {
 			funcName = runtime.FuncForPC(pc).Name()
 		}
-		entry.withCallerInfo(fmt.Sprintf(callerInfoFormat, line, funcName))
+		entry.withCallerInfo(line, file, funcName)
 	}
 	p.logChan <- entry
 }
 
 // logf 记录日志
-func (p *mgr) logf(entry *entry, level uint32, format string, v ...interface{}) {
+func (p *mgr) logf(entry *entry, level uint32, format string, v ...any) {
 	entry.withLevel(level).
 		withTime(p.timeMgr.NowTime()).
-		withMessage(fmt.Sprintf(format, v...))
+		withMessage(format, v...)
 	if *p.options.isReportCaller {
-		pc, _, line, ok := runtime.Caller(calldepth2)
+		pc, file, line, ok := runtime.Caller(calldepth2)
 		funcName := xerror.Unknown.Name()
 		if !ok {
 			line = 0
 		} else {
 			funcName = runtime.FuncForPC(pc).Name()
 		}
-		entry.withCallerInfo(fmt.Sprintf(callerInfoFormat, line, funcName))
+		entry.withCallerInfo(line, file, funcName)
 	}
 	p.logChan <- entry
 }
 
 // Trace 踪迹日志
-func (p *mgr) Trace(v ...interface{}) {
+func (p *mgr) Trace(v ...any) {
 	if p.GetLevel() < LevelTrace {
 		return
 	}
 	p.log(p.newEntry(), LevelTrace, v...)
 }
 
-func (p *mgr) TraceExtend(ctx context.Context, extendFields ExtendFields, v ...interface{}) {
+func (p *mgr) TraceExtend(ctx context.Context, extendFields ExtendFields, v ...any) {
 	if p.GetLevel() < LevelTrace {
 		return
 	}
@@ -260,14 +260,14 @@ func (p *mgr) TraceExtend(ctx context.Context, extendFields ExtendFields, v ...i
 }
 
 // Tracef 踪迹日志
-func (p *mgr) Tracef(format string, v ...interface{}) {
+func (p *mgr) Tracef(format string, v ...any) {
 	if p.GetLevel() < LevelTrace {
 		return
 	}
 	p.logf(p.newEntry(), LevelTrace, format, v...)
 }
 
-func (p *mgr) TracefExtend(ctx context.Context, extendFields ExtendFields, format string, v ...interface{}) {
+func (p *mgr) TracefExtend(ctx context.Context, extendFields ExtendFields, format string, v ...any) {
 	if p.GetLevel() < LevelTrace {
 		return
 	}
@@ -277,17 +277,26 @@ func (p *mgr) TracefExtend(ctx context.Context, extendFields ExtendFields, forma
 }
 
 // Debug 调试日志
-func (p *mgr) Debug(v ...interface{}) {
+func (p *mgr) Debug(v ...any) {
 	if p.GetLevel() < LevelDebug {
 		return
 	}
 	p.log(p.newEntry(), LevelDebug, v...)
 }
 
+func (p *mgr) DebugExtend(ctx context.Context, extendFields ExtendFields, v ...any) {
+	if p.GetLevel() < LevelDebug {
+		return
+	}
+	element := p.newEntry()
+	element.WithContext(ctx).WithExtendFields(extendFields)
+	p.log(element, LevelDebug, v...)
+}
+
 // DebugLazy 调试日志-惰性
 //
 //	等级满足之后才会计算
-func (p *mgr) DebugLazy(vFunc func() []interface{}) {
+func (p *mgr) DebugLazy(vFunc func() []any) {
 	if p.GetLevel() < LevelDebug {
 		return
 	}
@@ -296,17 +305,26 @@ func (p *mgr) DebugLazy(vFunc func() []interface{}) {
 }
 
 // Debugf 调试日志
-func (p *mgr) Debugf(format string, v ...interface{}) {
+func (p *mgr) Debugf(format string, v ...any) {
 	if p.GetLevel() < LevelDebug {
 		return
 	}
 	p.logf(p.newEntry(), LevelDebug, format, v...)
 }
 
+func (p *mgr) DebugfExtend(ctx context.Context, extendFields ExtendFields, format string, v ...any) {
+	if p.GetLevel() < LevelDebug {
+		return
+	}
+	element := p.newEntry()
+	element.WithContext(ctx).WithExtendFields(extendFields)
+	p.logf(element, LevelDebug, format, v...)
+}
+
 // DebugfLazy 调试日志-惰性
 //
 //	等级满足之后才会计算
-func (p *mgr) DebugfLazy(formatFunc func() (string, []interface{})) {
+func (p *mgr) DebugfLazy(formatFunc func() (string, []any)) {
 	if p.GetLevel() < LevelDebug {
 		return
 	}
@@ -315,65 +333,137 @@ func (p *mgr) DebugfLazy(formatFunc func() (string, []interface{})) {
 }
 
 // Info 信息日志
-func (p *mgr) Info(v ...interface{}) {
+func (p *mgr) Info(v ...any) {
 	if p.GetLevel() < LevelInfo {
 		return
 	}
 	p.log(p.newEntry(), LevelInfo, v...)
 }
 
+func (p *mgr) InfoExtend(ctx context.Context, extendFields ExtendFields, v ...any) {
+	if p.GetLevel() < LevelInfo {
+		return
+	}
+	element := p.newEntry()
+	element.WithContext(ctx).WithExtendFields(extendFields)
+	p.log(element, LevelInfo, v...)
+}
+
 // Infof 信息日志
-func (p *mgr) Infof(format string, v ...interface{}) {
+func (p *mgr) Infof(format string, v ...any) {
 	if p.GetLevel() < LevelInfo {
 		return
 	}
 	p.logf(p.newEntry(), LevelInfo, format, v...)
 }
 
+func (p *mgr) InfofExtend(ctx context.Context, extendFields ExtendFields, format string, v ...any) {
+	if p.GetLevel() < LevelInfo {
+		return
+	}
+	element := p.newEntry()
+	element.WithContext(ctx).WithExtendFields(extendFields)
+	p.logf(element, LevelInfo, format, v...)
+}
+
 // Warn 警告日志
-func (p *mgr) Warn(v ...interface{}) {
+func (p *mgr) Warn(v ...any) {
 	if p.GetLevel() < LevelWarn {
 		return
 	}
 	p.log(p.newEntry(), LevelWarn, v...)
 }
 
+func (p *mgr) WarnExtend(ctx context.Context, extendFields ExtendFields, v ...any) {
+	if p.GetLevel() < LevelWarn {
+		return
+	}
+	element := p.newEntry()
+	element.WithContext(ctx).WithExtendFields(extendFields)
+	p.log(element, LevelWarn, v...)
+}
+
 // Warnf 警告日志
-func (p *mgr) Warnf(format string, v ...interface{}) {
+func (p *mgr) Warnf(format string, v ...any) {
 	if p.GetLevel() < LevelWarn {
 		return
 	}
 	p.logf(p.newEntry(), LevelWarn, format, v...)
 }
 
+func (p *mgr) WarnfExtend(ctx context.Context, extendFields ExtendFields, format string, v ...any) {
+	if p.GetLevel() < LevelWarn {
+		return
+	}
+	element := p.newEntry()
+	element.WithContext(ctx).WithExtendFields(extendFields)
+	p.logf(element, LevelWarn, format, v...)
+}
+
 // Error 错误日志
-func (p *mgr) Error(v ...interface{}) {
+func (p *mgr) Error(v ...any) {
 	if p.GetLevel() < LevelError {
 		return
 	}
 	p.log(p.newEntry(), LevelError, v...)
 }
 
+func (p *mgr) ErrorExtend(ctx context.Context, extendFields ExtendFields, v ...any) {
+	if p.GetLevel() < LevelError {
+		return
+	}
+	element := p.newEntry()
+	element.WithContext(ctx).WithExtendFields(extendFields)
+	p.log(element, LevelError, v...)
+}
+
 // Errorf 错误日志
-func (p *mgr) Errorf(format string, v ...interface{}) {
+func (p *mgr) Errorf(format string, v ...any) {
 	if p.GetLevel() < LevelError {
 		return
 	}
 	p.logf(p.newEntry(), LevelError, format, v...)
 }
 
+func (p *mgr) ErrorfExtend(ctx context.Context, extendFields ExtendFields, format string, v ...any) {
+	if p.GetLevel() < LevelError {
+		return
+	}
+	element := p.newEntry()
+	element.WithContext(ctx).WithExtendFields(extendFields)
+	p.logf(element, LevelError, format, v...)
+}
+
 // Fatal 致命日志
-func (p *mgr) Fatal(v ...interface{}) {
+func (p *mgr) Fatal(v ...any) {
 	if p.GetLevel() < LevelFatal {
 		return
 	}
 	p.log(p.newEntry(), LevelFatal, v...)
 }
 
+func (p *mgr) FatalExtend(ctx context.Context, extendFields ExtendFields, v ...any) {
+	if p.GetLevel() < LevelFatal {
+		return
+	}
+	element := p.newEntry()
+	element.WithContext(ctx).WithExtendFields(extendFields)
+	p.log(element, LevelFatal, v...)
+}
+
 // Fatalf 致命日志
-func (p *mgr) Fatalf(format string, v ...interface{}) {
+func (p *mgr) Fatalf(format string, v ...any) {
 	if p.GetLevel() < LevelFatal {
 		return
 	}
 	p.logf(p.newEntry(), LevelFatal, format, v...)
+}
+
+func (p *mgr) FatalfExtend(ctx context.Context, extendFields ExtendFields, format string, v ...any) {
+	if p.GetLevel() < LevelFatal {
+		return
+	}
+	element := p.newEntry()
+	element.WithContext(ctx).WithExtendFields(extendFields)
+	p.logf(element, LevelFatal, format, v...)
 }

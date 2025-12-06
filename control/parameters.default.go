@@ -1,23 +1,21 @@
 package control
 
 type Parameters struct {
-	parameters []interface{}
+	args []any
 }
 
 func NewParameters() *Parameters {
-	return &Parameters{
-		parameters: make([]interface{}, 0),
-	}
+	return &Parameters{}
 }
 
-func (p *Parameters) Override(parameters ...interface{}) {
-	p.parameters = append([]interface{}{}, parameters...)
+func (p *Parameters) Override(args ...any) {
+	p.args = args
 }
 
-func (p *Parameters) Get() []interface{} {
-	return p.parameters
+func (p *Parameters) Get() []any {
+	return p.args
 }
 
-func (p *Parameters) Append(parameters ...interface{}) {
-	p.parameters = append(p.parameters, parameters...)
+func (p *Parameters) Append(args ...any) {
+	p.args = append(p.args, args...)
 }

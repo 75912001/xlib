@@ -23,12 +23,11 @@ type Etcd struct {
 	cancelFunc context.CancelFunc
 	waitGroup  sync.WaitGroup // Stop 等待信号
 
-	options     *options
-	CallbackFun CallbackFun
+	options *Options
 }
 
-func NewEtcd(opts ...*options) *Etcd {
-	opt := mergeOptions(opts...)
+func NewEtcd(opts ...*Options) *Etcd {
+	opt := MergeOptions(opts...)
 	err := configure(opt)
 	if err != nil {
 		xlog.PrintfErr("configure err:%v %v", err, xruntime.Location())
@@ -40,14 +39,14 @@ func NewEtcd(opts ...*options) *Etcd {
 }
 
 // Start 开始
-func (p *Etcd) Start(ctx context.Context) error {
+func (p *Etcd) Start(ctx context.Context, value string) error {
 	var err error
 	p.client, err = etcdclientv3.New(etcdclientv3.Config{
-		Endpoints:   p.options.addrs,
+		Endpoints:   p.options.endpoints,
 		DialTimeout: *p.options.dialTimeout,
 	})
 	if err != nil {
-		return errors.WithMessage(err, xruntime.Location())
+		return errors.WithMessagef(err, "etcd new client err. endpoints:%v %v", p.options.endpoints, xruntime.Location())
 	}
 	// 获得kv api子集
 	p.kv = etcdclientv3.NewKV(p.client)
@@ -56,35 +55,36 @@ func (p *Etcd) Start(ctx context.Context) error {
 	// 申请一个ttl秒的租约
 	p.leaseGrantResponse, err = p.lease.Grant(context.TODO(), *p.options.ttl)
 	if err != nil {
-		return errors.WithMessage(err, xruntime.Location())
+		return errors.WithMessagef(err, "etcd new lease err. endpoints:%v %v", p.options.endpoints, xruntime.Location())
 	}
 	// 删除
-	_, err = p.DelWithPrefix(*p.options.key)
-	if err != nil {
-		return errors.WithMessage(err, xruntime.Location())
+	if p.options.key != nil {
+		_, err = p.DelWithPrefix(*p.options.key)
+		if err != nil {
+			return errors.WithMessage(err, xruntime.Location())
+		}
 	}
 	// 添加
-	_, err = p.PutWithLease(*p.options.key, ValueJson2String(p.options.value))
-	if err != nil {
+	if 0 < len(value) {
+		_, err = p.PutWithLease(*p.options.key, value)
+		if err != nil {
+			return errors.WithMessage(err, xruntime.Location())
+		}
+	}
+	// etcd-watch
+	if err = p.WatchPrefixIntoChan(); err != nil {
 		return errors.WithMessage(err, xruntime.Location())
 	}
-	{
-		// etcd-watch
-		if err = p.WatchPrefixIntoChan(); err != nil {
-			return errors.WithMessage(err, xruntime.Location())
-		}
-		// etcd-get
-		if err = p.GetPrefixIntoChan(); err != nil {
-			return errors.WithMessage(err, xruntime.Location())
-		}
+	// etcd-get
+	if err = p.GetPrefixIntoChan(); err != nil {
+		return errors.WithMessage(err, xruntime.Location())
 	}
 	return nil
 }
 
 // Stop 停止
 func (p *Etcd) Stop() error {
-	if p.client != nil {
-		// 删除
+	if p.client != nil { // 删除
 		if _, err := p.DelWithPrefix(*p.options.key); err != nil {
 			xlog.PrintfErr("DelWithPrefix err:%v %v", err, xruntime.Location())
 		}
@@ -104,6 +104,10 @@ func (p *Etcd) Stop() error {
 	return nil
 }
 
+func (p *Etcd) GetKey() string {
+	return *p.options.key
+}
+
 // 多次重试 Start 和 KeepAlive
 func (p *Etcd) retryKeepAlive(ctx context.Context) error {
 	const grantLeaseRetryDuration = time.Second * 3 // 授权租约 重试 间隔时长
@@ -111,7 +115,7 @@ func (p *Etcd) retryKeepAlive(ctx context.Context) error {
 		*p.options.grantLeaseMaxRetries, grantLeaseRetryDuration/time.Second)
 	var failedGrantLeaseAttempts = 0
 	for {
-		if err := p.Start(ctx); err != nil {
+		if err := p.Start(ctx, ""); err != nil {
 			failedGrantLeaseAttempts++
 			if *p.options.grantLeaseMaxRetries <= failedGrantLeaseAttempts {
 				return errors.WithMessagef(err, "%v exceeded max attempts to renew etcd lease %v %v",
@@ -164,7 +168,7 @@ func (p *Etcd) KeepAlive(ctx context.Context) error {
 				xlog.PrintInfo(xerror.GoroutineDone)
 				return
 			case leaseKeepAliveResponse, ok := <-p.leaseKeepAliveResponseChannel:
-				xlog.PrintInfo(leaseKeepAliveResponse, ok)
+				//xlog.PrintInfo(leaseKeepAliveResponse, ok)
 				if leaseKeepAliveResponse != nil {
 					continue
 				}
@@ -202,25 +206,25 @@ func (p *Etcd) KeepAlive(ctx context.Context) error {
 func (p *Etcd) PutWithLease(key string, value string) (*etcdclientv3.PutResponse, error) {
 	putResponse, err := p.kv.Put(context.TODO(), key, value, etcdclientv3.WithLease(p.leaseGrantResponse.ID))
 	if err != nil {
-		return nil, errors.WithMessage(err, xruntime.Location())
+		return nil, errors.WithMessagef(err, "etcd put with lease err. key:%v value:%v %v", key, value, xruntime.Location())
 	}
 	return putResponse, nil
 }
 
-// Put 将一个键值对放入etcd中
-func (p *Etcd) Put(key string, value string) (*etcdclientv3.PutResponse, error) {
-	putResponse, err := p.kv.Put(context.TODO(), key, value)
-	if err != nil {
-		return nil, errors.WithMessage(err, xruntime.Location())
-	}
-	return putResponse, nil
-}
+// Put 将一个键值对放入etcd中 [不带租约ttl]
+//func (p *Etcd) Put(key string, value string) (*etcdclientv3.PutResponse, error) {
+//	putResponse, err := p.kv.Put(context.TODO(), key, value)
+//	if err != nil {
+//		return nil, errors.WithMessage(err, xruntime.Location())
+//	}
+//	return putResponse, nil
+//}
 
 // DelWithPrefix 删除键值 匹配的键值
 func (p *Etcd) DelWithPrefix(keyPrefix string) (*etcdclientv3.DeleteResponse, error) {
 	deleteResponse, err := p.kv.Delete(context.TODO(), keyPrefix, etcdclientv3.WithPrefix())
 	if err != nil {
-		return nil, errors.WithMessage(err, xruntime.Location())
+		return nil, errors.WithMessagef(err, "etcd del with prefix err. keyPrefix:%v %v", keyPrefix, xruntime.Location())
 	}
 	return deleteResponse, nil
 }
@@ -268,24 +272,55 @@ func (p *Etcd) WatchPrefix(key string) etcdclientv3.WatchChan {
 func (p *Etcd) GetPrefix(key string) (*etcdclientv3.GetResponse, error) {
 	getResponse, err := p.kv.Get(context.TODO(), key, etcdclientv3.WithPrefix())
 	if err != nil {
-		return nil, errors.WithMessage(err, xruntime.Location())
+		return nil, errors.WithMessagef(err, "etcd get prefix err. key:%v %v", key, xruntime.Location())
 	}
 	return getResponse, nil
 }
 
 // GetPrefixIntoChan  取得关心的前缀,放入 chan 中
 func (p *Etcd) GetPrefixIntoChan() (err error) {
+	if p.options.watchKeyPrefix == nil { // 如果没有设置 watchKeyPrefix,则无动作
+		return nil
+	}
 	getResponse, err := p.GetPrefix(*p.options.watchKeyPrefix)
 	if err != nil {
 		return errors.WithMessage(err, xruntime.Location())
 	}
 	for _, v := range getResponse.Kvs {
+		key := string(v.Key)
 		var valueJson *ValueJson
 		if len(v.Value) != 0 {
 			valueJson = ValueString2Json(string(v.Value))
 		}
-		p.options.eventChan <- &Event{
-			ICallBack: xcontrol.NewCallBack(p.CallbackFun, string(v.Key), valueJson),
+		_, oldExist := GRegistry.Find(key)
+		GRegistry.Update(key, valueJson)
+		var cb xcontrol.ICallBack
+		if oldExist { // 已存在
+			if valueJson == nil { // 删除
+				if p.options.DelCallback != nil {
+					cb = p.options.DelCallback.Clone(key)
+				}
+			} else { // 更新
+				if p.options.UpdateCallback != nil {
+					cb = p.options.UpdateCallback.Clone(key, valueJson)
+				}
+			}
+		} else { // 不存在
+			if valueJson == nil { // 删除,但不存在,无动作
+				continue
+			} else { // 新增
+				if p.options.AddCallback != nil {
+					cb = p.options.AddCallback.Clone(key, valueJson)
+				}
+			}
+		}
+		if cb != nil {
+			p.options.iOut.Send(
+				&xcontrol.Event{
+					ISwitch:   xcontrol.NewSwitchButton(true),
+					ICallBack: cb,
+				},
+			)
 		}
 	}
 	return
@@ -293,6 +328,9 @@ func (p *Etcd) GetPrefixIntoChan() (err error) {
 
 // WatchPrefixIntoChan 监听key变化,放入 chan 中
 func (p *Etcd) WatchPrefixIntoChan() (err error) {
+	if p.options.watchKeyPrefix == nil { // 如果没有设置 watchKeyPrefix,则不监听
+		return nil
+	}
 	eventChan := p.WatchPrefix(*p.options.watchKeyPrefix)
 	go func() {
 		defer func() {
@@ -304,14 +342,42 @@ func (p *Etcd) WatchPrefixIntoChan() (err error) {
 			xlog.PrintInfo(xerror.GoroutineDone)
 		}()
 		for v := range eventChan {
-			Key := string(v.Events[0].Kv.Key)
-			Value := string(v.Events[0].Kv.Value)
+			kv := v.Events[0].Kv
+			key := string(kv.Key)
+			Value := string(kv.Value)
 			var valueJson *ValueJson
 			if len(Value) != 0 {
 				valueJson = ValueString2Json(Value)
 			}
-			p.options.eventChan <- &Event{
-				ICallBack: xcontrol.NewCallBack(p.CallbackFun, Key, valueJson),
+			_, oldExist := GRegistry.Find(key)
+			GRegistry.Update(key, valueJson)
+			var cb xcontrol.ICallBack
+			if oldExist { // 已存在
+				if valueJson == nil { // 删除
+					if p.options.DelCallback != nil {
+						cb = p.options.DelCallback.Clone(key)
+					}
+				} else { // 更新
+					if p.options.UpdateCallback != nil {
+						cb = p.options.UpdateCallback.Clone(key, valueJson)
+					}
+				}
+			} else { // 不存在
+				if valueJson == nil { // 删除,但不存在,无动作
+					continue
+				} else { // 新增
+					if p.options.AddCallback != nil {
+						cb = p.options.AddCallback.Clone(key, valueJson)
+					}
+				}
+			}
+			if cb != nil {
+				p.options.iOut.Send(
+					&xcontrol.Event{
+						ISwitch:   xcontrol.NewSwitchButton(true),
+						ICallBack: cb,
+					},
+				)
 			}
 		}
 	}()

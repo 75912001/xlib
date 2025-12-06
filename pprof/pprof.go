@@ -16,10 +16,8 @@ import (
 func StartHTTPprof(addr string) {
 	go func() {
 		defer func() {
-			if xruntime.IsRelease() {
-				if err := recover(); err != nil {
-					xlog.PrintErr(xerror.GoroutinePanic, err, xruntime.Location(), debug.Stack())
-				}
+			if err := recover(); err != nil {
+				xlog.PrintErr(xerror.GoroutinePanic, err, xruntime.Location(), debug.Stack())
 			}
 			xlog.PrintInfo(xerror.GoroutineDone)
 		}()

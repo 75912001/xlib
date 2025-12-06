@@ -1,7 +1,6 @@
 package log
 
 import (
-	"fmt"
 	xerror "github.com/75912001/xlib/error"
 	"log"
 	"os"
@@ -12,33 +11,33 @@ import (
 var stdErr = log.New(os.Stderr, "", 0)
 
 // PrintErr 输出到os.Stderr
-func PrintErr(v ...interface{}) {
+func PrintErr(v ...any) {
 	funcName := xerror.Unknown.Name()
-	pc, _, line, ok := runtime.Caller(calldepth1)
+	pc, file, line, ok := runtime.Caller(calldepth1)
 	if ok {
 		funcName = runtime.FuncForPC(pc).Name()
 	}
 	element := newEntry().
 		withLevel(LevelError).
 		withTime(time.Now()).
-		withCallerInfo(fmt.Sprintf(callerInfoFormat, line, funcName)).
-		withMessage(fmt.Sprint(v...))
+		withCallerInfo(line, file, funcName).
+		withMessage("", v...)
 	formatLogData(element)
 	_ = stdErr.Output(calldepth2, element.outString)
 }
 
 // PrintfErr 输出到os.Stderr
-func PrintfErr(format string, v ...interface{}) {
+func PrintfErr(format string, v ...any) {
 	funcName := xerror.Unknown.Name()
-	pc, _, line, ok := runtime.Caller(calldepth1)
+	pc, file, line, ok := runtime.Caller(calldepth1)
 	if ok {
 		funcName = runtime.FuncForPC(pc).Name()
 	}
 	element := newEntry().
 		withLevel(LevelError).
 		withTime(time.Now()).
-		withCallerInfo(fmt.Sprintf(callerInfoFormat, line, funcName)).
-		withMessage(fmt.Sprintf(format, v...))
+		withCallerInfo(line, file, funcName).
+		withMessage(format, v...)
 	formatLogData(element)
 	_ = stdErr.Output(calldepth2, element.outString)
 }
