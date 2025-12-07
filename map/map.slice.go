@@ -1,8 +1,9 @@
 package xmap
 
-import "maps"
-
-import "slices"
+import (
+	"maps"
+	"slices"
+)
 
 // SliceOrderedMap 是一个泛型结构体，它使用 slice (保持元素插入顺序) 和 map 来保持元素
 //

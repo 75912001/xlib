@@ -51,7 +51,7 @@ func (p *MapMutexMgr[TKey, TVal]) Get(key TKey) TVal {
 	return p.m[key]
 }
 
-// 随机获取
+// RadomGet 随机获取
 func (p *MapMutexMgr[TKey, TVal]) RadomGet() (TKey, TVal, bool) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()

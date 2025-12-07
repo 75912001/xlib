@@ -2,6 +2,7 @@ package xmap
 
 import (
 	"maps"
+	"math/rand"
 )
 
 type MapMgr[TKey comparable, TVal any] struct {
@@ -44,6 +45,25 @@ func (p *MapMgr[TKey, TVal]) IsExist(key TKey) bool {
 // Get 获取元素
 func (p *MapMgr[TKey, TVal]) Get(key TKey) TVal {
 	return p.m[key]
+}
+
+// RadomGet 随机获取
+func (p *MapMgr[TKey, TVal]) RadomGet() (TKey, TVal, bool) {
+	var zeroK TKey
+	var zeroV TVal
+	count := len(p.m)
+	if count == 0 {
+		return zeroK, zeroV, false
+	}
+	target := rand.Intn(count)
+	idx := 0
+	for k, v := range p.m {
+		if idx == target {
+			return k, v, true
+		}
+		idx++
+	}
+	return zeroK, zeroV, false // 理论上不会到这里
 }
 
 // Del 删除元素
