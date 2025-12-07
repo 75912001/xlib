@@ -2,6 +2,8 @@ package actor
 
 import (
 	"fmt"
+
+	xruntime "github.com/75912001/xlib/runtime"
 )
 
 func (p *Actor[KEY]) handleStop(event *BehaviorEvent) (response any, err error) {
@@ -27,7 +29,7 @@ func (p *Actor[KEY]) handleRemoveChild(event *BehaviorEvent) (response any, err 
 
 	child, ok := p.childrenMgr.Find(childKey)
 	if !ok {
-		return nil, fmt.Errorf("child not exist %v", childKey)
+		return nil, fmt.Errorf("child not exist %v %v", childKey, xruntime.Location())
 	}
 	if event.IsSync() {
 		_, _ = child.SendEventWithResponse(
@@ -48,7 +50,7 @@ func (p *Actor[KEY]) handleSpawn(event *BehaviorEvent) (response any, err error)
 
 	// 检查是否已存在
 	if p.childrenMgr.Get(key) != nil {
-		return nil, fmt.Errorf("child %v is already exist", key)
+		return nil, fmt.Errorf("child %v is already exist %v", key, xruntime.Location())
 	}
 	// 创建并启动子 Actor
 	child := NewActor(key, p, behavior)
@@ -63,7 +65,7 @@ func (p *Actor[KEY]) handleGetChild(event *BehaviorEvent) (response any, err err
 	// 检查是否已存在
 	child := p.childrenMgr.Get(key)
 	if child == nil {
-		return nil, fmt.Errorf("child %v is not exist", key)
+		return nil, fmt.Errorf("child %v is not exist %v", key, xruntime.Location())
 	}
 	return any(child), nil
 }

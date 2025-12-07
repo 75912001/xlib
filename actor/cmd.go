@@ -16,3 +16,13 @@ const (
 	SystemReservedCommand_GetChild           = 4294960004     // 获取子 actor {args: [0]:子 actor key} {返回: response *Actor[KEY]}
 	SystemReservedCommand_End                = math.MaxUint32 // 系统保留命令-结束值
 )
+
+// 是否-用户自定义命令
+func isCustomCommand(cmd uint32) bool {
+	return cmd <= CustomCommand_End
+}
+
+// 是否-系统保留命令
+func isSystemReservedCommand(cmd uint32) bool {
+	return SystemReservedCommand_Begin <= cmd
+}
