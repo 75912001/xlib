@@ -3,15 +3,21 @@ package actor
 import (
 	"fmt"
 
+	xerror "github.com/75912001/xlib/error"
 	xruntime "github.com/75912001/xlib/runtime"
+	"github.com/pkg/errors"
 )
 
 func (p *Actor[KEY]) handleStop(event *BehaviorEvent) (response any, err error) {
 	p.childrenMgr.Foreach(func(key KEY, child *Actor[KEY]) bool { // 停止所有子 Actor
 		if event.IsSync() { // 同步
-			_, _ = child.SendEventWithResponse(event)
+			_, _ = child.SendEventWithResponse(
+				NewBehaviorEvent(event.Ctx, SystemReservedCommand_Stop),
+			)
 		} else { // 异步
-			child.SendEvent(event)
+			child.SendEvent(
+				NewBehaviorEvent(event.Ctx, SystemReservedCommand_Stop),
+			)
 		}
 		return true
 	})
@@ -22,6 +28,9 @@ func (p *Actor[KEY]) handleStop(event *BehaviorEvent) (response any, err error) 
 }
 
 func (p *Actor[KEY]) handleRemoveChild(event *BehaviorEvent) (response any, err error) {
+	if len(event.Args) < 1 {
+		return nil, errors.WithMessage(xerror.ParamCountNotMatch, xruntime.Location())
+	}
 	childKey, ok := event.Args[0].(KEY)
 	if !ok {
 		return nil, fmt.Errorf("invalid child key type %v", xruntime.Location())
@@ -44,6 +53,9 @@ func (p *Actor[KEY]) handleRemoveChild(event *BehaviorEvent) (response any, err 
 }
 
 func (p *Actor[KEY]) handleSpawn(event *BehaviorEvent) (response any, err error) {
+	if len(event.Args) < 2 {
+		return nil, errors.WithMessage(xerror.ParamCountNotMatch, xruntime.Location())
+	}
 	key, ok := event.Args[0].(KEY)
 	if !ok {
 		return nil, fmt.Errorf("invalid child key type %v", xruntime.Location())
@@ -64,6 +76,9 @@ func (p *Actor[KEY]) handleSpawn(event *BehaviorEvent) (response any, err error)
 }
 
 func (p *Actor[KEY]) handleGetChild(event *BehaviorEvent) (response any, err error) {
+	if len(event.Args) < 1 {
+		return nil, errors.WithMessage(xerror.ParamCountNotMatch, xruntime.Location())
+	}
 	key, ok := event.Args[0].(KEY)
 	if !ok {
 		return nil, fmt.Errorf("invalid child key type %v", xruntime.Location())

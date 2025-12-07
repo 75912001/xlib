@@ -39,7 +39,7 @@ func (p *BehaviorEvent) withResponseChan(responseChan chan *behaviorResponse) *B
 	return p
 }
 
-// IsSyn 是否同步
+// IsSync 是否同步
 //
 //	如果事件有响应通道, 则认为是同步调用
 func (p *BehaviorEvent) IsSync() bool {
