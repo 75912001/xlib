@@ -56,3 +56,14 @@ func (p *Actor[KEY]) handleSpawn(event *BehaviorEvent) (response any, err error)
 	child.Start()
 	return any(child), nil
 }
+
+func (p *Actor[KEY]) handleGetChild(event *BehaviorEvent) (response any, err error) {
+	key := event.Args[0].(KEY)
+
+	// 检查是否已存在
+	child := p.childrenMgr.Get(key)
+	if child == nil {
+		return nil, fmt.Errorf("child %v is not exist", key)
+	}
+	return any(child), nil
+}
