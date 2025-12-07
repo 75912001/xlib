@@ -7,19 +7,20 @@ package event
 import (
 	"container/list"
 	"context"
+	"runtime/debug"
+	"sync"
+	"time"
+
 	xcontrol "github.com/75912001/xlib/control"
 	xerror "github.com/75912001/xlib/error"
 	xlog "github.com/75912001/xlib/log"
 	xruntime "github.com/75912001/xlib/runtime"
-	"runtime/debug"
-	"sync"
-	"time"
 )
 
-type Manager ListManager
+type Manager ListMgr
 
-// ListManager 事件管理器
-type ListManager struct {
+// ListMgr 事件管理器
+type ListMgr struct {
 	queueMu    sync.Mutex // 保护 events
 	events     *list.List
 	notifyChan chan struct{} // 通知有新消息
@@ -30,18 +31,18 @@ type ListManager struct {
 	cancel      context.CancelFunc
 }
 
-// NewListManager 创建一个新的事件管理器
+// NewListMgr 创建一个新的事件管理器
 //
 //	workerCount: 工作协程数量
 //	handler: 事件处理函数
-func NewListManager(workerCount uint32, onFunction xcontrol.OnFunction) *ListManager {
+func NewListMgr(workerCount uint32, onFunction xcontrol.OnFunction) *ListMgr {
 	if workerCount <= 0 {
 		workerCount = 1
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	return &ListManager{
+	return &ListMgr{
 		events:      list.New(),
 		notifyChan:  make(chan struct{}, int(workerCount)),
 		workerCount: workerCount,
@@ -52,14 +53,14 @@ func NewListManager(workerCount uint32, onFunction xcontrol.OnFunction) *ListMan
 }
 
 // Start 启动事件管理器
-func (p *ListManager) Start() {
+func (p *ListMgr) Start() {
 	for range int(p.workerCount) {
 		go p.worker()
 	}
 }
 
 // Stop 停止事件管理器
-func (p *ListManager) Stop() {
+func (p *ListMgr) Stop() {
 	go func() { // 检查协程是否可以结束
 		idleDuration := 100 * time.Millisecond
 		idleDelay := time.NewTimer(idleDuration)
@@ -77,7 +78,7 @@ func (p *ListManager) Stop() {
 }
 
 // Send 发送事件到管理器
-func (p *ListManager) Send(events ...any) {
+func (p *ListMgr) Send(events ...any) {
 	p.queueMu.Lock()
 	for _, event := range events {
 		p.events.PushBack(event)
@@ -90,7 +91,7 @@ func (p *ListManager) Send(events ...any) {
 }
 
 // worker 工作协程
-func (p *ListManager) worker() {
+func (p *ListMgr) worker() {
 	defer func() {
 		if xruntime.IsRelease() {
 			if r := recover(); r != nil {
@@ -128,7 +129,7 @@ func (p *ListManager) worker() {
 }
 
 // 处理退出检查
-func (p *ListManager) handleQuitCheck() bool {
+func (p *ListMgr) handleQuitCheck() bool {
 	p.queueMu.Lock()
 	cnt := p.events.Len()
 	p.queueMu.Unlock()
