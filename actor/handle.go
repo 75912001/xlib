@@ -16,17 +16,16 @@ func (p *Actor[KEY]) handleStop(event *BehaviorEvent) (response any, err error) 
 		return true
 	})
 	p.childrenMgr.Clear()
-	if event.IsSync() { // 响应调用方（如果是同步调用）
-		event.responseChan <- &behaviorResponse{data: nil, err: nil}
-	}
 	// 停止自己的事件管理器
 	p.eventMgr.Stop()
 	return nil, nil
 }
 
 func (p *Actor[KEY]) handleRemoveChild(event *BehaviorEvent) (response any, err error) {
-	childKey := event.Args[0]
-
+	childKey, ok := event.Args[0].(KEY)
+	if !ok {
+		return nil, fmt.Errorf("invalid child key type %v", xruntime.Location())
+	}
 	child, ok := p.childrenMgr.Find(childKey)
 	if !ok {
 		return nil, fmt.Errorf("child not exist %v %v", childKey, xruntime.Location())
@@ -45,9 +44,14 @@ func (p *Actor[KEY]) handleRemoveChild(event *BehaviorEvent) (response any, err 
 }
 
 func (p *Actor[KEY]) handleSpawn(event *BehaviorEvent) (response any, err error) {
-	key := event.Args[0].(KEY)
-	behavior := event.Args[1].(Behavior)
-
+	key, ok := event.Args[0].(KEY)
+	if !ok {
+		return nil, fmt.Errorf("invalid child key type %v", xruntime.Location())
+	}
+	behavior, ok := event.Args[1].(Behavior)
+	if !ok {
+		return nil, fmt.Errorf("invalid child behavior type %v", xruntime.Location())
+	}
 	// 检查是否已存在
 	if p.childrenMgr.Get(key) != nil {
 		return nil, fmt.Errorf("child %v is already exist %v", key, xruntime.Location())
@@ -60,8 +64,10 @@ func (p *Actor[KEY]) handleSpawn(event *BehaviorEvent) (response any, err error)
 }
 
 func (p *Actor[KEY]) handleGetChild(event *BehaviorEvent) (response any, err error) {
-	key := event.Args[0].(KEY)
-
+	key, ok := event.Args[0].(KEY)
+	if !ok {
+		return nil, fmt.Errorf("invalid child key type %v", xruntime.Location())
+	}
 	// 检查是否已存在
 	child := p.childrenMgr.Get(key)
 	if child == nil {

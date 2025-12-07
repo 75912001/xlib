@@ -60,8 +60,9 @@ func (p *Actor[KEY]) process(args ...any) (err error) {
 			return
 		}
 		p.behavior, response, err = p.behavior(msg)
-		_ = response
-		err = errors.WithMessagef(err, "actor process error. %v", xruntime.Location())
+		if err != nil {
+			err = errors.WithMessagef(err, "actor process error. %v", xruntime.Location())
+		}
 		return
 	}
 }
