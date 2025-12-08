@@ -19,38 +19,38 @@ func (p *Actor[KEY]) process(args ...any) (err error) {
 			p.Statistics.ErrorCount++
 		}
 	}()
-	var response any
+	var resp any
 	msg := args[0]
-	switch event := msg.(type) {
-	case *BehaviorEvent: // 处理 BehaviorEvent
-		if isSystemReservedCommand(event.Cmd) { // 系统保留命令
-			switch event.Cmd { // 系统保留命令
+	switch message := msg.(type) {
+	case *Msg: // 处理 Msg
+		if isSystemReservedCommand(message.Cmd) { // 系统保留命令
+			switch message.Cmd {
 			case SystemReservedCommand_Stop:
-				response, err = p.handleStop(event)
+				resp, err = p.stop(message)
 			case SystemReservedCommand_RemoveChild:
-				response, err = p.handleRemoveChild(event)
+				resp, err = p.removeChild(message)
 			case SystemReservedCommand_Spawn:
-				response, err = p.handleSpawn(event)
+				resp, err = p.spawn(message)
 			case SystemReservedCommand_GetChild:
-				response, err = p.handleGetChild(event)
+				resp, err = p.getChild(message)
 			default:
-				err = fmt.Errorf("unknown system reserved command: %v %v", event.Cmd, xruntime.Location())
+				err = fmt.Errorf("unknown system reserved command: %v %v", message.Cmd, xruntime.Location())
 			}
 		} else { // 用户自定义命令
 			if p.behavior == nil {
 				err = errors.WithMessagef(xerror.NoBehavior, "actor has no behavior. key:%v %v",
 					p.key, xruntime.Location())
 			} else {
-				p.behavior, response, err = p.behavior(event)
+				p.behavior, resp, err = p.behavior(message)
 				if err != nil {
 					err = errors.WithMessagef(err, "actor process error. %v", xruntime.Location())
 				}
 			}
 		}
-		if event.IsSync() { // 同步调用
-			event.responseChan <- &behaviorResponse{
-				data: response,
-				err:  err,
+		if message.IsSync() { // 同步调用
+			message.asyncChan <- &behaviorResponse{
+				respData: resp,
+				err:      err,
 			}
 		}
 		return
@@ -59,7 +59,7 @@ func (p *Actor[KEY]) process(args ...any) (err error) {
 			err = errors.WithMessagef(xerror.NoBehavior, "actor has no behavior. %v", xruntime.Location())
 			return
 		}
-		p.behavior, response, err = p.behavior(msg)
+		p.behavior, resp, err = p.behavior(msg)
 		if err != nil {
 			err = errors.WithMessagef(err, "actor process error. %v", xruntime.Location())
 		}
