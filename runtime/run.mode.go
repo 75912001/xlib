@@ -1,26 +1,22 @@
 package runtime
 
-// runMode 运行模式
-type runMode uint32
-
-const (
-	RunModeRelease runMode = 0 // release 模式
-	RunModeDebug   runMode = 1 // debug 模式
+import (
+	xruntimeconstants "github.com/75912001/xlib/runtime/constants"
 )
 
 // 程序运行模式
-var programRunMode = RunModeRelease
+var programRunMode = xruntimeconstants.RunModeRelease
 
-func SetRunMode(mode runMode) {
+func SetRunMode(mode xruntimeconstants.RunMode) {
 	programRunMode = mode
 }
 
 // IsDebug 是否为调试模式
 func IsDebug() bool {
-	return programRunMode == RunModeDebug
+	return programRunMode == xruntimeconstants.RunModeDebug
 }
 
 // IsRelease 是否为发行模式
 func IsRelease() bool {
-	return programRunMode == RunModeRelease
+	return programRunMode == xruntimeconstants.RunModeRelease
 }

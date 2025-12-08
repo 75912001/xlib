@@ -1,5 +1,7 @@
 package log
 
+import "fmt"
+
 // 日志等级
 const (
 	LevelOff   uint32 = 0 //关闭
@@ -22,4 +24,12 @@ var levelDesc = []string{
 	LevelDebug: "DEB",      //调试
 	LevelTrace: "TRA",      //跟踪
 	LevelOn:    "LevelOn",  //全部打开
+}
+
+// 获取等级描述
+func GetLevelDesc(level uint32) string {
+	if LevelOn < level || level < LevelOff {
+		return fmt.Sprintf("Log Level Unknown:%v", level)
+	}
+	return levelDesc[level]
 }

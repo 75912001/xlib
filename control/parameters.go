@@ -2,7 +2,7 @@ package control
 
 // IParameters 参数
 type IParameters interface {
-	Override(parameters ...interface{}) // 覆盖参数
-	Get() []interface{}                 // 获取参数 [全部]
-	Append(parameters ...interface{})   // 追加参数
+	Override(args ...any) // 覆盖参数
+	Get() []any           // 获取参数 [全部]
+	Append(args ...any)   // 追加参数
 }

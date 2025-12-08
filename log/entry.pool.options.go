@@ -8,14 +8,14 @@ import (
 // entry的内存池选项
 type entryPoolOptions struct {
 	poolSwitch   xcontrol.ISwitchButton // 内存池开关 [default]: true
-	pool         *sync.Pool             // 内存池 [default]: &sync.Pool{New: func() interface{} { return newEntry() }}
+	pool         *sync.Pool             // 内存池 [default]: &sync.Pool{New: func() any { return newEntry() }}
 	newEntryFunc func() *entry          // 创建 entry 的方法 [default]: func() *entry { return p.pool.Get().(*entry) }
 }
 
 // newEntryPoolOptions 新的entryPoolOptions
 func newEntryPoolOptions() *entryPoolOptions {
 	pool := &sync.Pool{
-		New: func() interface{} {
+		New: func() any {
 			return newEntry()
 		},
 	}
@@ -53,7 +53,7 @@ func (p *entryPoolOptions) merge(opts ...*entryPoolOptions) *entryPoolOptions {
 func (p *entryPoolOptions) configure() error {
 	if p.poolSwitch.IsOn() {
 		p.pool = &sync.Pool{
-			New: func() interface{} {
+			New: func() any {
 				return newEntry()
 			},
 		}

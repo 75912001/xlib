@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "github.com/75912001/xlib/grpc/proto;proto"; // mod;proto
+
+import "google/protobuf/descriptor.proto";
+
+// 负载均衡-策略
+enum LoadBalancePolicy {
+    LoadBalancePolicy_Unspecified = 0;
+    LoadBalancePolicy_First = 1; //
+    LoadBalancePolicy_Random = 2; // 随机
+    LoadBalancePolicy_RoundRobin = 3; // 轮询
+    LoadBalancePolicy_Mod = 4; // 取模
+    LoadBalancePolicy_RingHash = 5; // 环形哈希
+}
+
+// 分片-类型
+enum ShardKeyFieldType {
+    ShardKeyFieldType_Unspecified = 0;
+    ShardKeyFieldType_STRING = 1;
+    ShardKeyFieldType_INT32 = 2;
+    ShardKeyFieldType_INT64 = 3;
+    ShardKeyFieldType_UINT32 = 4;
+    ShardKeyFieldType_UINT64 = 5;
+}
+
+// 服务-选项
+message ServiceOpt {
+    string timeout = 10;// 超时时间，如 "3s", "1m" 等
+    LoadBalancePolicy loadBalancePolicy = 20; // 负载均衡-策略
+    ShardKeyFieldType shardKeyFieldType = 30; // 分片-类型
+}
+
+// 方法选项
+message MethodOpt {
+    string timeout = 10; // 超时时间，如 "3s", "1m" 等
+    LoadBalancePolicy loadBalancePolicy = 20; // 负载均衡-策略
+    ShardKeyFieldType shardKeyFieldType = 30; // 分片-类型
+}
+
+// 字段选项
+message FieldOpt {
+    bool shardKey = 10;
+}
+
+// 扩展-服务-选项
+extend google.protobuf.ServiceOptions {
+    ServiceOpt serviceOpt = 1000;
+}
+
+// 扩展-方法-选项
+extend google.protobuf.MethodOptions {
+    MethodOpt methodOpt = 1000;
+}
+
+// 扩展-字段-选项
+extend google.protobuf.FieldOptions {
+    FieldOpt fieldOpt = 1000;
+}

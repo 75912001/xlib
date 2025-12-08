@@ -25,6 +25,10 @@ func newDefaultMessage(opts *options) *Message {
 	}
 }
 
+func (p *Message) IsPassThrough() bool {
+	return p.passThroughSwitch.IsOn()
+}
+
 func (p *Message) Execute() error {
 	if p.stateSwitch.IsOff() { // 消息是否禁用
 		return xerror.Disable
@@ -36,7 +40,7 @@ func (p *Message) Execute() error {
 func (p *Message) Marshal(message proto.Message) (data []byte, err error) {
 	data, err = proto.Marshal(message)
 	if err != nil {
-		return nil, errors.WithMessage(err, xruntime.Location())
+		return nil, errors.WithMessagef(err, "message marshal %v, %v", message, xruntime.Location())
 	}
 	return data, nil
 }
@@ -48,7 +52,7 @@ func (p *Message) Unmarshal(data []byte) (message proto.Message, err error) {
 	message = p.newProtoMessage()
 	err = proto.Unmarshal(data, message)
 	if err != nil {
-		return nil, errors.WithMessage(err, xruntime.Location())
+		return nil, errors.WithMessagef(err, "message unmarshal %v, %v", data, xruntime.Location())
 	}
 	return message, nil
 }
@@ -60,7 +64,7 @@ func (p *Message) JsonUnmarshal(data []byte) (message proto.Message, err error) 
 	message = p.newProtoMessage()
 	err = protojson.Unmarshal(data, message)
 	if err != nil {
-		return nil, errors.WithMessage(err, xruntime.Location())
+		return nil, errors.WithMessagef(err, "message json unmarshal %v, %v", data, xruntime.Location())
 	}
 	return message, nil
 }

@@ -3,36 +3,10 @@
 package file
 
 import (
+	xruntime "github.com/75912001/xlib/runtime"
+	"github.com/pkg/errors"
 	"os"
 )
-
-// options 选项
-type options struct {
-	overwrite bool // 覆盖
-	append    bool // 追加
-}
-
-// NewOptions 创建选项
-func NewOptions() *options {
-	return &options{
-		overwrite: true,  // 默认覆盖
-		append:    false, // 默认不追加
-	}
-}
-
-// Overwrite 覆盖
-func (fo *options) Overwrite() *options {
-	fo.overwrite = true
-	fo.append = false
-	return fo
-}
-
-// Append 追加
-func (fo *options) Append() *options {
-	fo.append = true
-	fo.overwrite = false
-	return fo
-}
 
 // WriteFile 写文件,可选择覆盖或者追加
 //
@@ -50,13 +24,15 @@ func WriteFile(pathFile string, data []byte, opts *options) error {
 	}
 
 	if err != nil {
-		return err
+		return errors.WithMessagef(err, "write file %v, %v", pathFile, xruntime.Location())
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
 	_, err = file.Write(data)
 	if err != nil {
-		return err
+		return errors.WithMessagef(err, "write file %v, %v", pathFile, xruntime.Location())
 	}
 
 	return nil
@@ -65,7 +41,7 @@ func WriteFile(pathFile string, data []byte, opts *options) error {
 // PathFileExists 判断文件是否存在
 //
 //	pathFile: 文件路径
-//	return: 存在返回true, 不存在返回false
+//	return: 存在-true, 不存在-false
 func PathFileExists(pathFile string) bool {
 	_, err := os.Stat(pathFile)
 	if err == nil {
@@ -88,7 +64,7 @@ func CreateDirectory(path string) error {
 	if os.IsNotExist(err) {
 		err = os.MkdirAll(path, 0755) //os.ModePerm
 		if err != nil {
-			return err
+			return errors.WithMessagef(err, "create directory %v, %v", path, xruntime.Location())
 		}
 	}
 	return nil

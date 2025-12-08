@@ -1,77 +1,88 @@
 package server
 
 import (
-	xetcd "github.com/75912001/xlib/etcd"
+	xactor "github.com/75912001/xlib/actor"
+	xcontrol "github.com/75912001/xlib/control"
+	xerror "github.com/75912001/xlib/error"
 	xlog "github.com/75912001/xlib/log"
 	xnetcommon "github.com/75912001/xlib/net/common"
 	xruntime "github.com/75912001/xlib/runtime"
-	xtimer "github.com/75912001/xlib/timer"
+	"github.com/pkg/errors"
 	"time"
 )
 
-// 总线-channel-退出检查
-var GBusChannelQuitCheck = make(chan struct{}, 1)
+// 性能监控阈值
+const (
+	timeThreshold50ms = 50
+	timeThreshold20ms = 20
+	timeThreshold10ms = 10
+)
 
-// Handle todo [重要] issue 在处理 event 时候, 向 eventChan 中插入 事件，注意超出eventChan的上限会阻塞.
-// 目前有超时机制来防止阻塞.
-func (p *Server) Handle() error {
-	//在消费eventChan时可能会往eventChan中写入事件，所以关闭服务时不能close eventChan（造成写入阻塞），通过定时检查eventChan大小来关闭
-	for {
-		select {
-		case <-GBusChannelQuitCheck:
-			p.Log.Warn("receive GBusChannelQuitCheck")
-			if 0 == len(p.BusChannel) && IsServerStopping() {
-				p.Log.Warn("server is stopping, stop consume GEventChan with length 0")
-				return nil
-			} else {
-				p.Log.Warnf("server is stopping, waiting for consume GEventChan with length:%d", len(p.BusChannel))
-			}
-		case value := <-p.BusChannel:
-			//TODO [*] 应拿尽拿...
-			p.TimeMgr.Update()
-			var err error
-			switch event := value.(type) {
-			case *xnetcommon.Connect:
-				err = event.IHandler.OnConnect(event.IRemote)
-			case *xnetcommon.Packet:
-				if !event.IRemote.IsConnect() {
-					continue
-				}
-				err = event.IHandler.OnPacket(event.IRemote, event.IPacket)
-			case *xnetcommon.Disconnect:
-				err = event.IHandler.OnDisconnect(event.IRemote)
-				if !event.IRemote.IsConnect() {
-					continue
-				}
-				event.IRemote.Stop()
-			case *xtimer.EventTimerSecond:
-				if event.ISwitch.IsOff() {
-					continue
-				}
-				_ = event.ICallBack.Execute()
-			case *xtimer.EventTimerMillisecond:
-				if event.ISwitch.IsOff() {
-					continue
-				}
-				_ = event.ICallBack.Execute()
-			case *xetcd.Event:
-				_ = event.ICallBack.Execute()
-			default:
-				xlog.PrintfErr("non-existent event:%value %value", value, event)
-			}
-			if err != nil {
-				p.Log.Errorf("Handle event:%v error:%value", value, err)
-			}
-			if xruntime.IsDebug() {
-				dt := time.Now().Sub(p.TimeMgr.NowTime()).Milliseconds()
-				if dt > 50 {
-					xlog.PrintfErr("cost time50: %value Millisecond with event type:%T", dt, value)
-				} else if dt > 20 {
-					xlog.PrintfErr("cost time20: %value Millisecond with event type:%T", dt, value)
-				} else if dt > 10 {
-					xlog.PrintfErr("cost time10: %value Millisecond with event type:%T", dt, value)
-				}
-			}
+// 事件处理结果
+type eventResult struct {
+	err error // 错误
+	dt  int64 // 处理时间,毫秒
+}
+
+func (p *Server) behavior(events ...any) (be xactor.Behavior, response any, err error) {
+	event := events[0]
+	result := p.processEvent(event)
+	if result.err != nil {
+		xlog.GLog.Error(result.err)
+	}
+
+	// 性能监控
+	p.monitorPerformance(event, result.dt)
+	if result.err != nil {
+		return p.behavior, response, errors.WithMessagef(result.err, "processEvent error, with event type:%T", event)
+	}
+	return p.behavior, response, nil
+}
+
+// processEvent 处理事件
+func (p *Server) processEvent(value any) eventResult {
+	var err error
+	beginNow := time.Now()
+	switch event := value.(type) {
+	case *xnetcommon.Connect:
+		err = event.IHandler.OnConnect(event.IRemote)
+	case *xnetcommon.Packet:
+		if event.IRemote.IsConnect() {
+			err = event.IHandler.OnPacket(event.IRemote, event.IPacket)
 		}
+	case *xnetcommon.Disconnect:
+		err = event.IHandler.OnDisconnect(event.IRemote)
+		if event.IRemote.IsConnect() {
+			event.IRemote.Stop()
+		}
+	case *xcontrol.Event:
+		if event.ISwitch.IsOn() {
+			_ = event.ICallBack.Execute()
+		}
+	default:
+		err = xerror.NotSupport
+		xlog.GLog.Errorf("non-existent event:%v %v", value, event)
+	}
+	if err != nil {
+		xlog.GLog.Errorf("Handle event:%v error:%v", value, err)
+	}
+	return eventResult{
+		err: err,
+		dt:  time.Since(beginNow).Milliseconds(),
+	}
+}
+
+// monitorPerformance 性能监控
+func (p *Server) monitorPerformance(value any, dt int64) {
+	if !xruntime.IsDebug() {
+		return
+	}
+	switch {
+	case dt > timeThreshold50ms:
+		xlog.GLog.Warnf("cost time50ms: %v Millisecond with event type:%T", dt, value)
+	case dt > timeThreshold20ms:
+		xlog.GLog.Warnf("cost time20ms: %v Millisecond with event type:%T", dt, value)
+	case dt > timeThreshold10ms:
+		xlog.GLog.Warnf("cost time10ms: %v Millisecond with event type:%T", dt, value)
 	}
 }

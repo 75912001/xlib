@@ -1,9 +1,5 @@
 package packet
 
-import (
-	"encoding/binary"
-)
-
 const HeaderSize uint32 = 24
 const HeaderLengthFieldSize uint32 = 4 // 包头-总长度-字段 的 大小
 
@@ -21,36 +17,21 @@ func NewHeader() *Header {
 	return &Header{}
 }
 
+// Pack 打包包头, 会分配包头中长度的空间
 func (p *Header) Pack() []byte {
-	data := make([]byte, p.Length) // [todo menglc] 这里可以使用内存池,记得回收
-	if IsBigEndian() {
-		binary.BigEndian.PutUint32(data[0:], p.Length)
-		binary.BigEndian.PutUint32(data[4:], p.MessageID)
-		binary.BigEndian.PutUint32(data[8:], p.SessionID)
-		binary.BigEndian.PutUint32(data[12:], p.ResultID)
-		binary.BigEndian.PutUint64(data[16:], p.Key)
-	} else {
-		binary.LittleEndian.PutUint32(data[0:], p.Length)
-		binary.LittleEndian.PutUint32(data[4:], p.MessageID)
-		binary.LittleEndian.PutUint32(data[8:], p.SessionID)
-		binary.LittleEndian.PutUint32(data[12:], p.ResultID)
-		binary.LittleEndian.PutUint64(data[16:], p.Key)
-	}
+	data := make([]byte, p.Length)
+	GEndian.PutUint32(data[0:], p.Length)
+	GEndian.PutUint32(data[4:], p.MessageID)
+	GEndian.PutUint32(data[8:], p.SessionID)
+	GEndian.PutUint32(data[12:], p.ResultID)
+	GEndian.PutUint64(data[16:], p.Key)
 	return data
 }
 
 func (p *Header) Unpack(data []byte) {
-	if IsBigEndian() {
-		p.Length = binary.BigEndian.Uint32(data[0:4])
-		p.MessageID = binary.BigEndian.Uint32(data[4:8])
-		p.SessionID = binary.BigEndian.Uint32(data[8:12])
-		p.ResultID = binary.BigEndian.Uint32(data[12:16])
-		p.Key = binary.BigEndian.Uint64(data[16:HeaderSize])
-	} else {
-		p.Length = binary.LittleEndian.Uint32(data[0:4])
-		p.MessageID = binary.LittleEndian.Uint32(data[4:8])
-		p.SessionID = binary.LittleEndian.Uint32(data[8:12])
-		p.ResultID = binary.LittleEndian.Uint32(data[12:16])
-		p.Key = binary.LittleEndian.Uint64(data[16:HeaderSize])
-	}
+	p.Length = GEndian.Uint32(data[0:4])
+	p.MessageID = GEndian.Uint32(data[4:8])
+	p.SessionID = GEndian.Uint32(data[8:12])
+	p.ResultID = GEndian.Uint32(data[12:16])
+	p.Key = GEndian.Uint64(data[16:HeaderSize])
 }

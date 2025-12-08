@@ -36,14 +36,13 @@ func (p *Packet) WithIMessage(iMessage xmessage.IMessage) *Packet {
 
 func (p *Packet) Marshal() (data []byte, err error) {
 	if p.PBMessage == nil { // 没有消息体
-		//return nil, xerror.NotImplemented
 		p.Header.Length = HeaderSize
 		buf := p.Header.Pack()
 		return buf, nil
 	} else { // 有消息体
 		data, err = proto.Marshal(p.PBMessage)
 		if err != nil {
-			return nil, errors.WithMessage(err, xruntime.Location())
+			return nil, errors.WithMessagef(err, "packet marshal err. %v", xruntime.Location())
 		}
 		p.Header.Length = HeaderSize + uint32(len(data))
 		buf := p.Header.Pack()
