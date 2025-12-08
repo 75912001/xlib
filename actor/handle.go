@@ -22,8 +22,8 @@ func (p *Actor[KEY]) handleStop(event *BehaviorEvent) (response any, err error) 
 		return true
 	})
 	p.childrenMgr.Clear()
-	// 停止自己的事件管理器
-	p.eventMgr.Stop()
+	// 停止自己的消息管理器
+	p.messageMgr.Stop()
 	return nil, nil
 }
 
