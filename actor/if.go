@@ -4,7 +4,7 @@ type IActor[Key comparable] interface {
 	GetKey() Key
 }
 
-type IActorEvent interface {
-	SendEvent(events ...*BehaviorEvent)
-	SendEventWithResponse(event *BehaviorEvent) (response any, err error)
+type IActorMsg interface {
+	SendMsg(msg ...*Msg)
+	SendMsgAsync(msg *Msg) (resp any, err error)
 }
