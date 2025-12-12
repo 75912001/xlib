@@ -2,11 +2,7 @@ package util
 
 import (
 	"bytes"
-	xerror "github.com/75912001/xlib/error"
-	xpool "github.com/75912001/xlib/pool"
-	xruntime "github.com/75912001/xlib/runtime"
-	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
+	"math"
 	"reflect"
 	"runtime"
 	"slices"
@@ -14,6 +10,12 @@ import (
 	"strings"
 	"time"
 	"unsafe"
+
+	xerror "github.com/75912001/xlib/error"
+	xpool "github.com/75912001/xlib/pool"
+	xruntime "github.com/75912001/xlib/runtime"
+	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 )
 
 // IsLittleEndian 是否小端
@@ -209,4 +211,11 @@ func GetGoroutineID() uint64 {
 	b = b[:i]
 	n, _ := strconv.ParseUint(string(b), 10, 64)
 	return n
+}
+
+const float32Epsilon = 1e-6
+
+// Float32Equal 判断两个 float32 是否相等
+func Float32Equal(a, b float32) bool {
+	return math.Abs(float64(a-b)) <= float32Epsilon
 }
