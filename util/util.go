@@ -219,3 +219,8 @@ const float32Epsilon = 1e-6
 func Float32Equal(a, b float32) bool {
 	return math.Abs(float64(a-b)) <= float32Epsilon
 }
+
+func Float32Less(a, b float32) bool {
+	// 如果 b 减去 a 的值大于误差，说明 b 比 a 大出的部分已经超过了“相等”的界限
+	return b-a > float32Epsilon
+}
