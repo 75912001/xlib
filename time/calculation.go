@@ -8,7 +8,8 @@ import (
 // GetDayStartTimestampFromTime 当天开始时间戳
 func (p *Mgr) GetDayStartTimestampFromTime(t *time.Time) int64 {
 	if p.UTCSwitch.IsOn() {
-		return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC).Unix()
+		tUTC := t.UTC() // 先转 UTC
+		return time.Date(tUTC.Year(), tUTC.Month(), tUTC.Day(), 0, 0, 0, 0, time.UTC).Unix()
 	}
 	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location()).Unix()
 }
@@ -38,8 +39,13 @@ func (p *Mgr) GetYMDFromTimestamp(timestamp int64) int {
 }
 
 // GenYYYYMMDD 获取yyyymmdd
-func GenYYYYMMDD(timestamp int64) (yyyymmdd int) {
-	strYYYYMMDD := time.Unix(timestamp, 0).Format("20060102")
+func (p *Mgr) GenYYYYMMDD(timestamp int64) (yyyymmdd int) {
+	var strYYYYMMDD string
+	if p.UTCSwitch.IsOn() {
+		strYYYYMMDD = time.Unix(timestamp, 0).UTC().Format("20060102")
+	} else {
+		strYYYYMMDD = time.Unix(timestamp, 0).Format("20060102")
+	}
 	yyyymmdd, _ = strconv.Atoi(strYYYYMMDD)
 	return
 }

@@ -47,6 +47,10 @@ func (p *Default[KEY]) Subscribe(key KEY, onFunction xcontrol.OnFunction) error 
 //
 //	[❗] 取消订阅的回调函数, 不可以是闭包函数.
 func (p *Default[KEY]) Unsubscribe(key KEY, onFunction xcontrol.OnFunction) error {
+	if onFunction == nil { // 回调为nil
+		return errors.WithMessagef(xerror.ParamNotSupport, "onFunction is nil, %v", xruntime.Location())
+	}
+
 	p.mu.Lock()
 	defer func() {
 		p.mu.Unlock()
@@ -84,15 +88,17 @@ func (p *Default[KEY]) Unsubscribe(key KEY, onFunction xcontrol.OnFunction) erro
 func (p *Default[KEY]) Publish(key KEY, args ...any) error {
 	var returnError error
 	p.mu.RLock()
-	defer func() {
-		p.mu.RUnlock()
-	}()
 
 	callbacks, ok := p.mapMgr.Find(key)
 	if !ok { // 无
+		p.mu.RUnlock()
 		return nil
 	}
-	for _, callback := range callbacks {
+	copied := make([]xcontrol.ICallBack, len(callbacks))
+	copy(copied, callbacks)
+	p.mu.RUnlock() // 拷贝完立即释放锁
+
+	for _, callback := range copied {
 		if err := callback.Clone(args...).Execute(); err != nil {
 			if returnError == nil {
 				returnError = errors.WithMessagef(err, "Publish %v %v", key, args)

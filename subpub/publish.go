@@ -2,6 +2,6 @@
 
 package subpub
 
-type IPublish interface {
-	Publish(key uint64, args ...any) error // 发布
+type IPublish[KEY ISubPubKey] interface {
+	Publish(key KEY, args ...any) error // 发布
 }
