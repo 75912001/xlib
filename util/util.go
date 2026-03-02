@@ -53,17 +53,16 @@ func IsDuplicate[T comparable](slice []T) bool {
 
 // IsDuplicateCustom 是否有重复-用于不可比较类型
 //
-//	[⚠️] 性能不高,慎用
 //	e.g.: [1, 2, 3, 1] => true
 func IsDuplicateCustom(slice []any, equals func(a, b any) bool) bool {
-	set := make(map[any]struct{})
+	set := make([]any, 0, len(slice))
 	for _, v1 := range slice {
-		for v2 := range set {
+		for _, v2 := range set {
 			if equals(v1, v2) {
 				return true
 			}
 		}
-		set[v1] = struct{}{}
+		set = append(set, v1)
 	}
 	return false
 }
@@ -114,6 +113,10 @@ func PushEventWithTimeout(eventChan chan<- any, event any, timeout time.Duration
 	timer := xpool.Timer.Get()
 	ok := timer.Reset(timeout)
 	if !ok { // 重置失败, 重新创建一个定时器
+		select {
+		case <-timer.C:
+		default:
+		}
 		xpool.Timer.Put(timer)         // 旧的定时器-回收
 		timer = time.NewTimer(timeout) // 新的定时器
 		defer func() {
@@ -140,6 +143,9 @@ func PushEventWithTimeout(eventChan chan<- any, event any, timeout time.Duration
 //	maxCap: 容量阈值, 超过则重新分配
 //	返回: 裁剪后的字节切片
 func TrimLeftBuffer(buf []byte, trimLen, maxCap int) []byte {
+	if trimLen < 0 {
+		return buf // 不裁剪
+	}
 	if len(buf) <= trimLen { // 全部裁剪
 		if maxCap < cap(buf) { // 占用空间过大, 重新分配
 			return make([]byte, 0)
@@ -217,10 +223,10 @@ const float32Epsilon = 1e-6
 
 // Float32Equal 判断两个 float32 是否相等
 func Float32Equal(a, b float32) bool {
-	return math.Abs(float64(a-b)) <= float32Epsilon
+	return math.Abs(float64(a)-float64(b)) <= float32Epsilon
 }
 
 func Float32Less(a, b float32) bool {
 	// 如果 b 减去 a 的值大于误差，说明 b 比 a 大出的部分已经超过了“相等”的界限
-	return b-a > float32Epsilon
+	return float64(b)-float64(a) > float32Epsilon
 }
