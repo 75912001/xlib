@@ -7,6 +7,7 @@ import (
 	xruntime "github.com/75912001/xlib/runtime"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"math"
 	mathrand "math/rand/v2"
 )
 
@@ -39,20 +40,25 @@ func newCryptoSeed() [32]byte {
 // 适用场景：游戏掉落、战斗计算等非安全敏感场景
 // ============================================
 
-// RandomInt 生成范围内的随机值 [min, max]
-func RandomInt(min, max int) int {
+func RandomU32(min, max uint32) uint32 {
 	if min > max {
 		min, max = max, min
 	}
-	return fastRand.IntN(max-min+1) + min
+	if min == 0 && max == math.MaxUint32 {
+		return fastRand.Uint32()
+	}
+	return fastRand.Uint32N(max-min+1) + min
 }
 
-// RandomInt64 生成64位随机整数 [min, max]
-func RandomInt64(min, max int64) int64 {
+// RandomU64 生成64位随机整数 [min, max]
+func RandomU64(min, max uint64) uint64 {
 	if min > max {
 		min, max = max, min
 	}
-	return fastRand.Int64N(max-min+1) + min
+	if min == 0 && max == math.MaxUint64 {
+		return fastRand.Uint64()
+	}
+	return fastRand.Uint64N(max-min+1) + min
 }
 
 // RandomUint32 生成32位随机整数
@@ -106,7 +112,7 @@ func RandomWeighted[T IWeight](weights []T) (idx int, err error) {
 }
 
 type IWeight interface {
-	int | uint32 | uint64
+	uint | uint32 | uint64
 }
 
 // RandomValueBySlice 生成 随机值
