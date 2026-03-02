@@ -31,8 +31,8 @@ func Split2Slice[T ISplitValue](src, sep string) (result []T, err error) {
 	case int:
 		for _, v := range slice {
 			var i64 int64
-			if i64, err = strconv.ParseInt(v, 10, 64); err != nil {
-				return result, errors.WithMessagef(err, "strconv parse src:%v sep:%v %v", src, sep, xruntime.Location())
+			if i64, err = strconv.ParseInt(v, 10, strconv.IntSize); err != nil {
+				return nil, errors.WithMessagef(err, "strconv parse src:%v sep:%v %v", src, sep, xruntime.Location())
 			}
 			result = append(result, any(int(i64)).(T))
 		}
@@ -40,7 +40,7 @@ func Split2Slice[T ISplitValue](src, sep string) (result []T, err error) {
 		for _, v := range slice {
 			var i64 int64
 			if i64, err = strconv.ParseInt(v, 10, 32); err != nil {
-				return result, errors.WithMessagef(err, "strconv parse src:%v sep:%v %v", src, sep, xruntime.Location())
+				return nil, errors.WithMessagef(err, "strconv parse src:%v sep:%v %v", src, sep, xruntime.Location())
 			}
 			result = append(result, any(int32(i64)).(T))
 		}
@@ -48,15 +48,15 @@ func Split2Slice[T ISplitValue](src, sep string) (result []T, err error) {
 		for _, v := range slice {
 			var i64 int64
 			if i64, err = strconv.ParseInt(v, 10, 64); err != nil {
-				return result, errors.WithMessagef(err, "strconv parse src:%v sep:%v %v", src, sep, xruntime.Location())
+				return nil, errors.WithMessagef(err, "strconv parse src:%v sep:%v %v", src, sep, xruntime.Location())
 			}
 			result = append(result, any(i64).(T))
 		}
 	case uint:
 		for _, v := range slice {
 			var u64 uint64
-			if u64, err = strconv.ParseUint(v, 10, 64); err != nil {
-				return result, errors.WithMessagef(err, "strconv parse src:%v sep:%v %v", src, sep, xruntime.Location())
+			if u64, err = strconv.ParseUint(v, 10, strconv.IntSize); err != nil {
+				return nil, errors.WithMessagef(err, "strconv parse src:%v sep:%v %v", src, sep, xruntime.Location())
 			}
 			result = append(result, any(uint(u64)).(T))
 		}
@@ -64,7 +64,7 @@ func Split2Slice[T ISplitValue](src, sep string) (result []T, err error) {
 		for _, v := range slice {
 			var u64 uint64
 			if u64, err = strconv.ParseUint(v, 10, 32); err != nil {
-				return result, errors.WithMessagef(err, "strconv parse src:%v sep:%v %v", src, sep, xruntime.Location())
+				return nil, errors.WithMessagef(err, "strconv parse src:%v sep:%v %v", src, sep, xruntime.Location())
 			}
 			result = append(result, any(uint32(u64)).(T))
 		}
@@ -72,7 +72,7 @@ func Split2Slice[T ISplitValue](src, sep string) (result []T, err error) {
 		for _, v := range slice {
 			var u64 uint64
 			if u64, err = strconv.ParseUint(v, 10, 64); err != nil {
-				return result, errors.WithMessagef(err, "strconv parse src:%v sep:%v %v", src, sep, xruntime.Location())
+				return nil, errors.WithMessagef(err, "strconv parse src:%v sep:%v %v", src, sep, xruntime.Location())
 			}
 			result = append(result, any(u64).(T))
 		}
@@ -107,7 +107,7 @@ func Split2Map[K ISplitKey, V ISplitValue](src, sep1, sep2 string) (map[K]V, err
 			key = any(sliceAttr[0]).(K)
 		case int:
 			var i64 int64
-			if i64, err = strconv.ParseInt(sliceAttr[0], 10, 64); err != nil {
+			if i64, err = strconv.ParseInt(sliceAttr[0], 10, strconv.IntSize); err != nil {
 				return nil, errors.WithMessagef(err, "strconv parse key src:%v sep1:%v sep2:%v %v", src, sep1, sep2, xruntime.Location())
 			}
 			key = any(int(i64)).(K)
@@ -125,7 +125,7 @@ func Split2Map[K ISplitKey, V ISplitValue](src, sep1, sep2 string) (map[K]V, err
 			key = any(i64).(K)
 		case uint:
 			var u64 uint64
-			if u64, err = strconv.ParseUint(sliceAttr[0], 10, 64); err != nil {
+			if u64, err = strconv.ParseUint(sliceAttr[0], 10, strconv.IntSize); err != nil {
 				return nil, errors.WithMessagef(err, "strconv parse key src:%v sep1:%v sep2:%v %v", src, sep1, sep2, xruntime.Location())
 			}
 			key = any(uint(u64)).(K)
@@ -150,7 +150,7 @@ func Split2Map[K ISplitKey, V ISplitValue](src, sep1, sep2 string) (map[K]V, err
 			val = any(sliceAttr[1]).(V)
 		case int:
 			var i64 int64
-			if i64, err = strconv.ParseInt(sliceAttr[1], 10, 64); err != nil {
+			if i64, err = strconv.ParseInt(sliceAttr[1], 10, strconv.IntSize); err != nil {
 				return nil, errors.WithMessagef(err, "strconv parse value src:%v sep1:%v sep2:%v %v", src, sep1, sep2, xruntime.Location())
 			}
 			val = any(int(i64)).(V)
@@ -168,7 +168,7 @@ func Split2Map[K ISplitKey, V ISplitValue](src, sep1, sep2 string) (map[K]V, err
 			val = any(i64).(V)
 		case uint:
 			var u64 uint64
-			if u64, err = strconv.ParseUint(sliceAttr[1], 10, 64); err != nil {
+			if u64, err = strconv.ParseUint(sliceAttr[1], 10, strconv.IntSize); err != nil {
 				return nil, errors.WithMessagef(err, "strconv parse value src:%v sep1:%v sep2:%v %v", src, sep1, sep2, xruntime.Location())
 			}
 			val = any(uint(u64)).(V)
