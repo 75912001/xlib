@@ -41,6 +41,7 @@ func (p *MillisecondMinHeap) Pop() any {
 	old := *p
 	n := len(old)
 	x := old[n-1]
+	old[n-1] = nil
 	*p = old[0 : n-1]
 	return x
 }

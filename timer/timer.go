@@ -82,8 +82,10 @@ func (p *defaultTimer) funcSecond(ctx context.Context) {
 // 每 Millisecond 个毫秒更新
 func (p *defaultTimer) funcMillisecond(ctx context.Context) {
 	defer func() {
-		if err := recover(); err != nil {
-			xlog.PrintErr(xerror.GoroutinePanic, err, string(debug.Stack()))
+		if xruntime.IsRelease() {
+			if err := recover(); err != nil {
+				xlog.PrintErr(xerror.GoroutinePanic, err, string(debug.Stack()))
+			}
 		}
 		p.waitGroup.Done()
 		xlog.PrintInfo(xerror.GoroutineDone)
