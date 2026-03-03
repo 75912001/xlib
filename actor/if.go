@@ -6,5 +6,5 @@ type IActor[Key comparable] interface {
 
 type IActorMsg interface {
 	SendMsg(msg ...*Msg)
-	SendMsgAsync(msg *Msg) (resp any, err error)
+	SendMsgSync(msg *Msg) (resp any, err error)
 }

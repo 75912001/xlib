@@ -11,7 +11,7 @@ import (
 func (p *Actor[KEY]) stop(msg *Msg) (resp any, err error) {
 	p.childMgr.Foreach(func(key KEY, child *Actor[KEY]) bool { // 停止所有子 Actor
 		if msg.IsSync() { // 同步
-			_, _ = child.SendMsgAsync(
+			_, _ = child.SendMsgSync(
 				NewMsg(msg.Ctx, SystemReservedCommand_Stop),
 			)
 		} else { // 异步
@@ -40,7 +40,7 @@ func (p *Actor[KEY]) removeChild(msg *Msg) (resp any, err error) {
 		return nil, fmt.Errorf("child not exist %v %v", childKey, xruntime.Location())
 	}
 	if msg.IsSync() {
-		_, _ = child.SendMsgAsync(
+		_, _ = child.SendMsgSync(
 			NewMsg(msg.Ctx, SystemReservedCommand_Stop),
 		)
 	} else {

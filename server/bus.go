@@ -27,9 +27,6 @@ type eventResult struct {
 func (p *Server) behavior(events ...any) (be xactor.Behavior, response any, err error) {
 	event := events[0]
 	result := p.processEvent(event)
-	if result.err != nil {
-		xlog.GLog.Error(result.err)
-	}
 
 	// 性能监控
 	p.monitorPerformance(event, result.dt)

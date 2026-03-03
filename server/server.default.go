@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha1"
 	"fmt"
+	xactor "github.com/75912001/xlib/actor"
 	xconfig "github.com/75912001/xlib/config"
 	xcontrol "github.com/75912001/xlib/control"
 	xerror "github.com/75912001/xlib/error"
@@ -68,6 +69,7 @@ func NewServer(args []string) *Server {
 		return nil
 	}
 	s.actor = NewActor(uint64(*xconfig.GConfigMgr.Base.ServerID), s.behavior)
+	s.Derived = s
 	return s
 }
 
@@ -178,8 +180,7 @@ func (p *Server) Start(ctx context.Context) (err error) {
 				WithIOut(p.GetActor()).
 				WithSendChanCapacity(*xconfig.GConfigMgr.Base.SendChannelCapacity).
 				WithHeaderStrategy(p.Options.HeaderStrategy).
-				WithNewPacketLimitFunc(xnetcommon.NewPackLimitDefault)
-			kcpOpts.WithNewPacketLimitFunc(xnetcommon.NewPackLimitDefault).
+				WithNewPacketLimitFunc(xnetcommon.NewPackLimitDefault).
 				WithMaxCntPerSec(*xconfig.GConfigMgr.Base.PacketLimitRecvCntPreSecond)
 			kcpOpts.WithBlockCrypt(blockCrypt).
 				WithFEC(true)
@@ -276,36 +277,37 @@ func (p *Server) PostStart() error {
 	case s := <-sigChan:
 		xlog.GLog.Warnf("Server got signal: %s, shutting down...", s)
 	}
-	err := p.Derived.PreStop()
-	if err != nil {
-		xlog.GLog.Warn("pre stop err:%v ", err)
+	if err := p.Derived.PreStop(); err != nil {
+		xlog.GLog.Warnf("pre stop err:%v ", err)
 	}
 	// 设置为关闭中
 	SetServerStopping()
 
-	p.actor.Stop()
+	if _, err := p.actor.SendMsgSync(xactor.NewMsg(context.Background(), xactor.SystemReservedCommand_Stop)); err != nil {
+		xlog.GLog.Warnf("actor stop err:%v ", err)
+	}
 
-	err = p.Derived.Stop()
+	err := p.Derived.Stop()
 	if err != nil {
-		xlog.GLog.Warn("server stop err:%v ", err)
+		xlog.GLog.Warnf("server stop err:%v ", err)
 		return errors.WithMessagef(err, "server stop err. %v", xruntime.Location())
 	}
 	return nil
 }
 
 func (p *Server) PreStop() error {
-	return xerror.NotImplemented
+	return nil
 }
 
 func (p *Server) Stop() (err error) {
-	err = xetcd.GEtcd.Stop()
-	if err != nil {
-		xlog.GLog.Errorf("etcd stop err:%v", err)
+	if xetcd.GEtcd != nil {
+		if errEtcd := xetcd.GEtcd.Stop(); errEtcd != nil {
+			err = errors.WithMessagef(errEtcd, "etcd stop err. %v", xruntime.Location())
+		}
 	}
-	if xconfig.GConfigMgr.Grpc.IsEnabled() {
-		err = p.GRPCServer.Stop()
-		if err != nil {
-			xlog.GLog.Errorf("grpc server stop err:%v", err)
+	if p.GRPCServer != nil {
+		if errGrpc := p.GRPCServer.Stop(); errGrpc != nil {
+			err = errors.WithMessagef(errGrpc, "grpc server stop err. %v", xruntime.Location())
 		}
 	}
 	if p.TCPServer != nil {
@@ -317,10 +319,8 @@ func (p *Server) Stop() (err error) {
 	if p.WebSocket != nil {
 		p.WebSocket.Stop()
 	}
-	if p.GRPCServer != nil {
-		_ = p.GRPCServer.Stop()
+	if xtimer.GTimer != nil {
+		xtimer.GTimer.Stop()
 	}
-
-	xtimer.GTimer.Stop()
-	return nil
+	return err
 }

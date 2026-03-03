@@ -66,7 +66,7 @@ func (p *Actor[KEY]) SendMsg(messages ...*Msg) {
 	p.msgMgr.Send(messagesAny...)
 }
 
-// SendMsgAsync 发送消息到 actor, 并等待响应 (同步)
+// SendMsgSync 发送消息到 actor, 并等待响应 (同步)
 //
 //	参数:
 //		msg: 行为-消息
@@ -74,8 +74,8 @@ func (p *Actor[KEY]) SendMsg(messages ...*Msg) {
 //	返回:
 //		resp: 响应数据
 //		err: 错误
-func (p *Actor[KEY]) SendMsgAsync(msg *Msg) (resp any, err error) {
-	msg.withAsyncChan(make(chan *behaviorResponse, 1))
+func (p *Actor[KEY]) SendMsgSync(msg *Msg) (resp any, err error) {
+	msg.withSyncChan(make(chan *behaviorResponse, 1))
 	p.SendMsg(msg)
 
 	// 判断 context 是否设置了超时
@@ -86,30 +86,35 @@ func (p *Actor[KEY]) SendMsgAsync(msg *Msg) (resp any, err error) {
 	}
 	if msg.Ctx != nil && hasDeadline { // 设置了 context, 设置超时 => 使用 context 的超时
 		select {
-		case res := <-msg.asyncChan:
+		case res := <-msg.syncChan:
 			return res.respData, res.err
 		case <-msg.Ctx.Done():
-			return nil, errors.WithMessagef(xerror.Timeout, "SendMsgAsync context timeout. msg:%v %v", msg, xruntime.Location())
+			return nil, errors.WithMessagef(xerror.Timeout, "SendMsgSync context timeout. msg:%v %v", msg, xruntime.Location())
 		}
 	}
 	// 没有设置 context, 没有设置超时 => 使用默认 60 秒超时
 	const timeout = 60 * time.Second
 	timer = xpool.Timer.Get()
-	ok := timer.Reset(timeout)
-	if !ok {
-		xpool.Timer.Put(timer)
-		timer = time.NewTimer(timeout)
-		defer timer.Stop()
-	} else {
-		defer func() {
-			timer.Stop()
-			xpool.Timer.Put(timer)
-		}()
+	if !timer.Stop() {
+		select {
+		case <-timer.C:
+		default:
+		}
 	}
+	timer.Reset(timeout)
+	defer func() {
+		if !timer.Stop() {
+			select {
+			case <-timer.C:
+			default:
+			}
+		}
+		xpool.Timer.Put(timer)
+	}()
 	select {
-	case res := <-msg.asyncChan:
+	case res := <-msg.syncChan:
 		return res.respData, res.err
 	case <-timer.C:
-		return nil, errors.WithMessagef(xerror.Timeout, "SendMsgAsync default timeout after 60 seconds. event:%v %v", msg, xruntime.Location())
+		return nil, errors.WithMessagef(xerror.Timeout, "SendMsgSync default timeout after 60 seconds. event:%v %v", msg, xruntime.Location())
 	}
 }

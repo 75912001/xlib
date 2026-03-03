@@ -48,7 +48,7 @@ func (p *Actor[KEY]) process(args ...any) (err error) {
 			}
 		}
 		if message.IsSync() { // 同步调用
-			message.asyncChan <- &behaviorResponse{
+			message.syncChan <- &behaviorResponse{
 				respData: resp,
 				err:      err,
 			}

@@ -11,7 +11,7 @@ type IStatistics interface {
 type Statistics struct {
 	Count       uint64        // 处理总数
 	ErrorCount  uint64        // 错误总数
-	ProcessTime time.Duration // 处理时间-总时间-毫秒
+	ProcessTime time.Duration // 处理时间-总时间
 }
 
 func NewStatistics() *Statistics {
