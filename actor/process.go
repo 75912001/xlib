@@ -2,9 +2,11 @@ package actor
 
 import (
 	"fmt"
+	"runtime/debug"
 	"time"
 
 	xerror "github.com/75912001/xlib/error"
+	xlog "github.com/75912001/xlib/log"
 	xruntime "github.com/75912001/xlib/runtime"
 	"github.com/pkg/errors"
 )
@@ -13,6 +15,10 @@ import (
 func (p *Actor[KEY]) process(args ...any) (err error) {
 	start := time.Now()
 	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic: %v stack:%v", r, string(debug.Stack()))
+			xlog.PrintfErr("Actor process panic key:%v err:%v", p.key, err)
+		}
 		p.Statistics.ProcessTime += time.Since(start)
 		p.Statistics.Count++
 		if err != nil {
