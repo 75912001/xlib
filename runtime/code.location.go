@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -46,7 +47,7 @@ func (p *codeLocation) String() string {
 	b.WriteString(strLine)
 	b.WriteString(" func:")
 	b.WriteString(p.funcName)
-	return b.String()
+	return strings.Clone(b.String())
 }
 
 // Location 使用对象池复用 codeLocation 对象

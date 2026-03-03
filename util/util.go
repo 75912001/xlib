@@ -111,23 +111,10 @@ func PushEventWithTimeout(eventChan chan<- any, event any, timeout time.Duration
 		// 只有写不进去时才分配 timer
 	}
 	timer := xpool.Timer.Get()
-	ok := timer.Reset(timeout)
-	if !ok { // 重置失败, 重新创建一个定时器
-		select {
-		case <-timer.C:
-		default:
-		}
-		xpool.Timer.Put(timer)         // 旧的定时器-回收
-		timer = time.NewTimer(timeout) // 新的定时器
-		defer func() {
-			timer.Stop()
-		}()
-	} else { // 重置成功, 使用已有的定时器
-		defer func() {
-			timer.Stop()
-			xpool.Timer.Put(timer)
-		}()
-	}
+	timer.Reset(timeout)
+	defer func() {
+		xpool.Timer.Put(timer)
+	}()
 	select {
 	case eventChan <- event:
 	case <-timer.C:

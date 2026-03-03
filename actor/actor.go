@@ -78,42 +78,33 @@ func (p *Actor[KEY]) SendMsgSync(msg *Msg) (resp any, err error) {
 	msg.withSyncChan(make(chan *behaviorResponse, 1))
 	p.SendMsg(msg)
 
-	// 判断 context 是否设置了超时
-	var timer *time.Timer
 	var hasDeadline bool
+	var ctxDone <-chan struct{}
 	if msg.Ctx != nil {
 		_, hasDeadline = msg.Ctx.Deadline()
+		ctxDone = msg.Ctx.Done()
 	}
-	if msg.Ctx != nil && hasDeadline { // 设置了 context, 设置超时 => 使用 context 的超时
+
+	if hasDeadline { // 设置了超时, 使用 context 的超时, 不加 60 秒上限
 		select {
 		case res := <-msg.syncChan:
 			return res.respData, res.err
-		case <-msg.Ctx.Done():
+		case <-ctxDone:
 			return nil, errors.WithMessagef(xerror.Timeout, "SendMsgSync context timeout. msg:%v %v", msg, xruntime.Location())
 		}
 	}
-	// 没有设置 context, 没有设置超时 => 使用默认 60 秒超时
+	// 未设置超时, 使用 60 秒默认超时兜底; ctxDone 为 nil 时永不触发 (nil channel)
 	const timeout = 60 * time.Second
-	timer = xpool.Timer.Get()
-	if !timer.Stop() {
-		select {
-		case <-timer.C:
-		default:
-		}
-	}
+	timer := xpool.Timer.Get()
 	timer.Reset(timeout)
 	defer func() {
-		if !timer.Stop() {
-			select {
-			case <-timer.C:
-			default:
-			}
-		}
 		xpool.Timer.Put(timer)
 	}()
 	select {
 	case res := <-msg.syncChan:
 		return res.respData, res.err
+	case <-ctxDone:
+		return nil, errors.WithMessagef(xerror.Timeout, "SendMsgSync context timeout. msg:%v %v", msg, xruntime.Location())
 	case <-timer.C:
 		return nil, errors.WithMessagef(xerror.Timeout, "SendMsgSync default timeout after 60 seconds. event:%v %v", msg, xruntime.Location())
 	}

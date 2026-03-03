@@ -52,7 +52,7 @@ var (
 
 // GetProperBuffer 根据所需大小返回合适的buffer
 //
-//	只适用于固定大小的 buffer
+//	只适用于固定大小的 buffer, 不适用于动态增长的 buffer, 因为 buffer 的容量可能会超过初始大小, 导致放回池中(PutBuffer)时无法正确分类
 func GetProperBuffer(size int) *bytes.Buffer {
 	switch {
 	case size <= sSize:
