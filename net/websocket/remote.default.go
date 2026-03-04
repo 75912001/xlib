@@ -11,7 +11,7 @@ import (
 	xutil "github.com/75912001/xlib/util"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
-	"strings"
+	"net"
 )
 
 // Remote 远端
@@ -32,11 +32,11 @@ func NewRemote(Conn *websocket.Conn, sendChan chan any) *Remote {
 
 // GetIP 获取IP地址
 func (p *Remote) GetIP() string {
-	slice := strings.Split(p.Conn.RemoteAddr().String(), ":")
-	if len(slice) < 1 {
+	host, _, err := net.SplitHostPort(p.Conn.RemoteAddr().String())
+	if err != nil {
 		return ""
 	}
-	return slice[0]
+	return host
 }
 
 func (p *Remote) Start(connOptions *xnetcommon.ConnOptions, iout xcontrol.IOut, handler xnetcommon.IHandler) {

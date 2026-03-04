@@ -70,10 +70,12 @@ func (p *Server) Start(ctx context.Context, opts ...*ServerOptions) error {
 			xlog.PrintInfo(xerror.GoroutineDone)
 		}()
 		err := p.httpServer.ListenAndServe()
-		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			xlog.PrintErr(xerror.GoroutinePanic, err, debug.Stack())
+		if err != nil {
+			xlog.PrintErr(xerror.GoroutineDone, err, debug.Stack())
+			if !errors.Is(err, http.ErrServerClosed) {
+				xlog.PrintErr(xerror.GoroutineDone, err, debug.Stack())
+			}
 		}
-		xlog.PrintErr(xerror.GoroutinePanic, err, debug.Stack())
 	}()
 	return nil
 }

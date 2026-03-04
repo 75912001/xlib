@@ -68,7 +68,7 @@ func (p *Remote) onRecvLengthFirst(ctx context.Context, iOut xcontrol.IOut, hand
 		packet, err := handler.OnUnmarshalPacket(p, buf)
 		xpool.PutBytes(buf)
 		if err != nil {
-			xlog.PrintfErr("remote:%p buf:%v err:%v", p, buf, err)
+			xlog.PrintfErr("remote:%p err:%v", p, err)
 			continue
 		}
 		if xconfig.GConfigMgr.Base.ProcessingModeIsActor() {
@@ -174,7 +174,7 @@ func (p *Remote) onRecvMessageIDFirst(ctx context.Context, iOut xcontrol.IOut, h
 		packet, err := handler.OnUnmarshalPacket(p, buf)
 		xpool.PutBytes(buf)
 		if err != nil {
-			xlog.PrintfErr("remote:%p buf:%v err:%v", p, buf, err)
+			xlog.PrintfErr("remote:%p err:%v", p, err)
 			continue
 		}
 		if xconfig.GConfigMgr.Base.ProcessingModeIsActor() {
@@ -247,7 +247,7 @@ func (p *Remote) onRecvLengthFirst_WithoutLength(ctx context.Context, iOut xcont
 		packet, err := handler.OnUnmarshalPacket(p, buf)
 		xpool.PutBytes(buf)
 		if err != nil {
-			xlog.PrintfErr("remote:%p buf:%v err:%v", p, buf, err)
+			xlog.PrintfErr("remote:%p err:%v", p, err)
 			continue
 		}
 		if xconfig.GConfigMgr.Base.ProcessingModeIsActor() {
