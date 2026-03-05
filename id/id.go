@@ -28,14 +28,15 @@ func NewIDGenerator[K IIDKey](min, max K) *IDGenerator[K] {
 
 // Next 获取下一个ID
 func (p *IDGenerator[K]) Next() (id K, err error) {
-	if p.current > p.max {
+	id = p.current
+	p.current++
+
+	if id > p.max {
 		err = errors.WithMessagef(errors.New("id out of range"), "id current:%v, max:%v %v",
-			p.current, p.max, xruntime.Location())
+			id, p.max, xruntime.Location())
 		return 0, err
 	}
 
-	id = p.current
-	p.current++
 	return id, nil
 }
 
