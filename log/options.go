@@ -90,6 +90,9 @@ func (p *options) merge(opts ...*options) *options {
 			p.isWriteFile = opt.isWriteFile
 		}
 		if opt.entryPoolOptions != nil {
+			if p.entryPoolOptions == nil {
+				p.entryPoolOptions = newEntryPoolOptions()
+			}
 			p.entryPoolOptions = p.entryPoolOptions.merge(opt.entryPoolOptions)
 		}
 		if opt.levelSubscribe != nil {
