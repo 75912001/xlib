@@ -89,8 +89,10 @@ func (p *Etcd) Start(ctx context.Context, value string) error {
 // Stop 停止
 func (p *Etcd) Stop() error {
 	if p.client != nil { // 删除
-		if _, err := p.DelWithPrefix(*p.options.key); err != nil {
-			xlog.PrintfErr("DelWithPrefix err:%v %v", err, xruntime.Location())
+		if p.options.key != nil {
+			if _, err := p.DelWithPrefix(*p.options.key); err != nil {
+				xlog.PrintfErr("DelWithPrefix err:%v %v", err, xruntime.Location())
+			}
 		}
 		err := p.client.Close()
 		if err != nil {
@@ -109,6 +111,9 @@ func (p *Etcd) Stop() error {
 }
 
 func (p *Etcd) GetKey() string {
+	if p.options.key == nil {
+		return ""
+	}
 	return *p.options.key
 }
 
