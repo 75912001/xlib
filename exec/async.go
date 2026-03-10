@@ -65,5 +65,8 @@ func asyncStdout(reader io.ReadCloser, fun FuncAsyncStd) error {
 			line := strings.Join(s[:len(s)-1], "\n")
 			fun(fmt.Sprintln(line))
 		}
+		if err == io.EOF {
+			return nil
+		}
 	}
 }
