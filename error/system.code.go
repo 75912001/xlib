@@ -78,7 +78,7 @@ var (
 	FunctionDone  = NewError(0x0b10).WithName("FunctionDone").WithDesc("function-done-函数-结束")
 	// channel
 	ChannelFull      = NewError(0x0c00).WithName("ChannelFull").WithDesc("channel-full-通道-满")
-	ChannelEmpty     = newError(0x0c10).WithName("ChannelEmpty").WithDesc("channel-empty-通道-空")
+	ChannelEmpty     = NewError(0x0c10).WithName("ChannelEmpty").WithDesc("channel-empty-通道-空")
 	ChannelNotClosed = NewError(0x0c20).WithName("ChannelNotClosed").WithDesc("channel-not-closed-通道-未关闭")
 	ChannelClosed    = NewError(0x0c30).WithName("ChannelClosed").WithDesc("channel-closed-通道-已关闭")
 	ChannelNil       = NewError(0x0c40).WithName("ChannelNil").WithDesc("channel-通道-未初始化")
