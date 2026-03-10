@@ -24,6 +24,7 @@ type Etcd struct {
 	waitGroup  sync.WaitGroup // Stop 等待信号
 
 	options *Options
+	value   string // 保存注册值,用于 retryKeepAlive 重新注册
 }
 
 func NewEtcd(opts ...*Options) *Etcd {
@@ -40,6 +41,9 @@ func NewEtcd(opts ...*Options) *Etcd {
 
 // Start 开始
 func (p *Etcd) Start(ctx context.Context, value string) error {
+	if len(value) > 0 {
+		p.value = value
+	}
 	var err error
 	p.client, err = etcdclientv3.New(etcdclientv3.Config{
 		Endpoints:   p.options.endpoints,
@@ -115,7 +119,7 @@ func (p *Etcd) retryKeepAlive(ctx context.Context) error {
 		*p.options.grantLeaseMaxRetries, grantLeaseRetryDuration/time.Second)
 	var failedGrantLeaseAttempts = 0
 	for {
-		if err := p.Start(ctx, ""); err != nil {
+		if err := p.Start(ctx, p.value); err != nil {
 			failedGrantLeaseAttempts++
 			if *p.options.grantLeaseMaxRetries <= failedGrantLeaseAttempts {
 				return errors.WithMessagef(err, "%v exceeded max attempts to renew etcd lease %v %v",
