@@ -19,30 +19,34 @@
 
 
 - **lib**: 公共库
+  - **actor**: Actor模型
   - **config**: 服务基础配置
-  - **common**: 公共模块
-  - **constants**: 常量
   - **control**: 控件
   - **error**: 错误码
-  - **etcd**: etcd客户端[todo menglc]
-  - **example**: 示例[todo menglc]
-  - **exec**: 执行器 [todo menglc]
-  - **file**: 文件操作[todo menglc]
-  - **log**: 日志[todo menglc]
+  - **etcd**: etcd客户端
+  - **event**: 事件系统
+  - **example**: 示例
+  - **exec**: 执行器
+  - **file**: 文件操作
+  - **grpc**: gRPC相关
+  - **hashring**: 一致性哈希
+  - **id**: ID生成器
+  - **log**: 日志
+  - **map**: Map
   - **message**: 消息
+  - **module**: 模块
   - **net**: 网络
   - **packet**: 数据包
-  - **pool**: 对象池[todo menglc]
-  - **pprof**: 性能分析[todo menglc]
-  - **runtime**: 运行时[todo menglc]
-  - **server**: 服务[todo menglc]
-  - **subpub**: 订阅发布[todo menglc]
-  - **time**: 时间管理器[todo menglc]
-  - **timer**: 定时器[todo menglc]
-  - **util**: 工具类[todo menglc]
-
-
-
+  - **plugin**: 插件系统
+  - **pool**: 对象池
+  - **pprof**: 性能分析
+  - **runtime**: 运行时
+  - **server**: 服务
+  - **statistics**: 统计
+  - **subpub**: 订阅发布
+  - **time**: 时间管理器
+  - **timer**: 定时器
+  - **util**: 工具类
 
 
 | 符号   | 名称/含义         | 用途说明                                   |
