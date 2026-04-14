@@ -37,15 +37,3 @@ func (p *Mgr) GetYMDFromTimestamp(timestamp int64) int {
 	ymd, _ := strconv.Atoi(strYMD)
 	return ymd
 }
-
-// GenYYYYMMDD 获取yyyymmdd
-func (p *Mgr) GenYYYYMMDD(timestamp int64) (yyyymmdd int) {
-	var strYYYYMMDD string
-	if p.UTCSwitch.IsOn() {
-		strYYYYMMDD = time.Unix(timestamp, 0).UTC().Format("20060102")
-	} else {
-		strYYYYMMDD = time.Unix(timestamp, 0).Format("20060102")
-	}
-	yyyymmdd, _ = strconv.Atoi(strYYYYMMDD)
-	return
-}
