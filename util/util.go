@@ -55,6 +55,9 @@ func IsDuplicate[T comparable](slice []T) bool {
 //
 //	e.g.: [1, 2, 3, 1] => true
 func IsDuplicateCustom(slice []any, equals func(a, b any) bool) bool {
+	if equals == nil {
+		panic(errors.WithMessagef(xerror.ParamNotSupport, "equals is nil %v", xruntime.Location()))
+	}
 	set := make([]any, 0, len(slice))
 	for _, v1 := range slice {
 		for _, v2 := range set {
@@ -82,8 +85,14 @@ func GetFuncName(i any, seps ...rune) string {
 	return xerror.Unknown.Name()
 }
 
-// PBMerge Protobuf - 深拷贝
-func PBMerge(src, dst proto.Message) {
+// PBCopy Protobuf - 深拷贝
+//
+//	e.g.:
+//		src := &pb.SomeMessage{Name: "hello"}
+//		dst := &pb.SomeMessage{}
+//		PBCopy(src, dst)
+//		// dst.Name == "hello"
+func PBCopy(src, dst proto.Message) {
 	proto.Reset(dst)
 	proto.Merge(dst, src)
 }
@@ -130,7 +139,7 @@ func PushEventWithTimeout(eventChan chan<- any, event any, timeout time.Duration
 //	maxCap: 容量阈值, 超过则重新分配
 //	返回: 裁剪后的字节切片
 func TrimLeftBuffer(buf []byte, trimLen, maxCap int) []byte {
-	if trimLen < 0 {
+	if trimLen <= 0 {
 		return buf // 不裁剪
 	}
 	if len(buf) <= trimLen { // 全部裁剪

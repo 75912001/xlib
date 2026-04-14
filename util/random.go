@@ -30,14 +30,14 @@ func newCryptoSeed() [32]byte {
 	var seed [32]byte
 	_, err := cryptorand.Read(seed[:])
 	if err != nil {
-		panic("failed to generate crypto seed: " + err.Error())
+		panic(errors.WithMessagef(err, "failed to generate crypto seed. %v", xruntime.Location()))
 	}
 	return seed
 }
 
 // ============================================
-// 快速随机数函数（游戏逻辑用）
-// 适用场景：游戏掉落、战斗计算等非安全敏感场景
+// 快速随机数函数(游戏逻辑用)
+// 适用场景:游戏掉落,战斗计算等非安全敏感场景
 // ============================================
 
 func RandomU32(min, max uint32) uint32 {
@@ -124,6 +124,9 @@ type IWeight interface {
 //		slice 中的值
 //	e.g.: except = [1, 2, 3], slice = [1, 2, 3, 4, 5], 则返回 4 或 5
 func RandomValueBySlice(except, slice []any, equals func(a, b any) bool) any {
+	if equals == nil {
+		panic(errors.WithMessagef(xerror.ParamNotSupport, "equals is nil %v", xruntime.Location()))
+	}
 	var newSlice []any
 	for _, v := range slice {
 		found := false
@@ -144,16 +147,42 @@ func RandomValueBySlice(except, slice []any, equals func(a, b any) bool) any {
 }
 
 // ============================================
-// 安全随机数函数（敏感操作用）
-// 适用场景：密钥、Token、会话ID等安全敏感场景
+// 安全随机数函数(敏感操作用)
+// 适用场景:密钥,Token,会话ID等安全敏感场景
 // ============================================
 
 // SecureRandomBytes 生成密码学安全的随机字节
 // 适用场景：密钥、Token、会话ID等安全敏感场景
 func SecureRandomBytes(length int) []byte {
 	b := make([]byte, length)
-	_, _ = cryptorand.Read(b)
+	_, err := cryptorand.Read(b)
+	if err != nil {
+		panic(errors.WithMessagef(err, "failed to cryptorand/Read %v", xruntime.Location()))
+	}
 	return b
+}
+
+// secureRandomIndex 在 [0, n) 上生成近似均匀分布的下标(单字节拒绝采样，避免 % n 的取模偏差)
+// 要求 n <= 256; 若 n 整除 256 则不会拒绝任何字节
+func secureRandomIndex(n int) int {
+	if n <= 0 {
+		panic(errors.WithMessagef(xerror.Param, "secureRandomIndex: n must be positive %v", xruntime.Location()))
+	}
+	if n == 1 {
+		return 0
+	}
+	limit := 256 - (256 % n)
+	var b [1]byte
+	for {
+		_, err := cryptorand.Read(b[:])
+		if err != nil {
+			panic(errors.WithMessagef(err, "failed to cryptorand/Read: %v", xruntime.Location()))
+		}
+		v := int(b[0])
+		if v < limit {
+			return v % n
+		}
+	}
 }
 
 // SecureRandomString 生成密码学安全的随机字符串
@@ -162,11 +191,9 @@ func SecureRandomString(length uint32) string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
 	const charsetLen = len(charset)
 
-	b := SecureRandomBytes(int(length))
-
 	result := make([]byte, length)
 	for i := uint32(0); i < length; i++ {
-		result[i] = charset[int(b[i])%charsetLen]
+		result[i] = charset[secureRandomIndex(charsetLen)]
 	}
 	return string(result)
 }
@@ -174,31 +201,43 @@ func SecureRandomString(length uint32) string {
 // SecureRandomInt64 生成密码学安全的64位随机整数
 func SecureRandomInt64() int64 {
 	var b [8]byte
-	_, _ = cryptorand.Read(b[:])
+	_, err := cryptorand.Read(b[:])
+	if err != nil {
+		panic(errors.WithMessagef(err, "failed to cryptorand/Read: %v", xruntime.Location()))
+	}
 	return int64(binary.BigEndian.Uint64(b[:]))
 }
 
 // SecureRandomUint32 生成密码学安全的32位随机整数
 func SecureRandomUint32() uint32 {
 	var b [4]byte
-	_, _ = cryptorand.Read(b[:])
+	_, err := cryptorand.Read(b[:])
+	if err != nil {
+		panic(errors.WithMessagef(err, "failed to cryptorand/Read: %v", xruntime.Location()))
+	}
 	return binary.BigEndian.Uint32(b[:])
 }
 
 // SecureRandomUint64 生成密码学安全的64位随机整数
 func SecureRandomUint64() uint64 {
 	var b [8]byte
-	_, _ = cryptorand.Read(b[:])
+	_, err := cryptorand.Read(b[:])
+	if err != nil {
+		panic(errors.WithMessagef(err, "failed to cryptorand/Read: %v", xruntime.Location()))
+	}
 	return binary.BigEndian.Uint64(b[:])
 }
 
 // ============================================
-// UUID 生成（已经是密码学安全的）
+// UUID 生成(已经是密码学安全的)
 // ============================================
 
 // UUIDRandomString UUID 生成 随机字符串
 func UUIDRandomString() string {
-	genUUID, _ := uuid.NewRandom()
+	genUUID, err := uuid.NewRandom()
+	if err != nil {
+		panic(errors.WithMessagef(err, "uuid new random %v", xruntime.Location()))
+	}
 	return genUUID.String()
 }
 

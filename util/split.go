@@ -26,6 +26,9 @@ func Split2Slice[T ISplitValue](src, sep string) (result []T, err error) {
 	switch any(t).(type) {
 	case string:
 		for _, v := range slice {
+			if len(v) == 0 {
+				return nil, errors.WithMessagef(xerror.Param, "string split empty src:%v sep:%v %v", src, sep, xruntime.Location())
+			}
 			result = append(result, any(v).(T))
 		}
 	case int:
@@ -81,6 +84,8 @@ func Split2Slice[T ISplitValue](src, sep string) (result []T, err error) {
 }
 
 // Split2Map 拆分字符串, 返回key为 ISplitKey 类型、val为 ISplitValue 类型的map
+//
+//	重复的key会被覆盖, 解析失败会返回错误
 //
 //	示例:
 //		Split2Map[uint32, uint32]("1,10;2,20", ";", ",")    => map[uint32]uint32{1:10, 2:20}

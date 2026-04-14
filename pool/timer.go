@@ -6,7 +6,9 @@ import (
 
 var Timer = NewPool(
 	func() *time.Timer {
-		return time.NewTimer(0)
+		t := time.NewTimer(0)
+		t.Stop()
+		return t
 	},
 	func(t *time.Timer) {
 		if !t.Stop() {
