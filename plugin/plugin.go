@@ -80,13 +80,13 @@ func (p *Mgr) Remove(name string) error {
 	return nil
 }
 
-// Close 关闭所有插件
+// Close 关闭所有插件并从管理器中删除
 func (p *Mgr) Close() error {
 	var returnError error
 
-	p.mu.RLock()
+	p.mu.Lock()
 	defer func() {
-		p.mu.RUnlock()
+		p.mu.Unlock()
 	}()
 
 	p.pluginMapMgr.Foreach(
@@ -101,6 +101,7 @@ func (p *Mgr) Close() error {
 			return true
 		},
 	)
+	p.pluginMapMgr.Clear()
 	if returnError != nil {
 		returnError = errors.WithMessage(returnError, xruntime.Location())
 	}
