@@ -14,6 +14,9 @@ const ReportIntervalSecondDefault int64 = 30 // etcd-上报时间间隔 秒
 func etcdReportFunction(args ...any) error {
 	defaultServer := args[0].(*Server)
 	defer func() {
+		if IsServerStopping() {
+			return
+		}
 		xtimer.GTimer.AddSecond(
 			xcontrol.NewCallBack(etcdReportFunction, defaultServer),
 			time.Now().Unix()+ReportIntervalSecondDefault,
