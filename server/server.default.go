@@ -300,14 +300,15 @@ func (p *Server) PreStop() error {
 }
 
 func (p *Server) Stop() (err error) {
+	var errs []error
 	if xetcd.GEtcd != nil {
 		if errEtcd := xetcd.GEtcd.Stop(); errEtcd != nil {
-			err = errors.WithMessagef(errEtcd, "etcd stop err. %v", xruntime.Location())
+			errs = append(errs, errors.WithMessagef(errEtcd, "etcd stop err. %v", xruntime.Location()))
 		}
 	}
 	if p.GRPCServer != nil {
 		if errGrpc := p.GRPCServer.Stop(); errGrpc != nil {
-			err = errors.WithMessagef(errGrpc, "grpc server stop err. %v", xruntime.Location())
+			errs = append(errs, errors.WithMessagef(errGrpc, "grpc server stop err. %v", xruntime.Location()))
 		}
 	}
 	if p.TCPServer != nil {
@@ -322,5 +323,15 @@ func (p *Server) Stop() (err error) {
 	if xtimer.GTimer != nil {
 		xtimer.GTimer.Stop()
 	}
-	return err
+	if len(errs) > 0 {
+		combined := ""
+		for i, e := range errs {
+			if i > 0 { // 多个错误时, 用分号分隔
+				combined += "; "
+			}
+			combined += e.Error()
+		}
+		return errors.Errorf("server stop err. %v", combined)
+	}
+	return nil
 }
