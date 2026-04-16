@@ -1,12 +1,13 @@
 package pprof
 
 import (
-	xerror "github.com/75912001/xlib/error"
-	xlog "github.com/75912001/xlib/log"
-	xruntime "github.com/75912001/xlib/runtime"
 	"net/http"
 	_ "net/http/pprof"
 	"runtime/debug"
+
+	xerror "github.com/75912001/xlib/error"
+	xlog "github.com/75912001/xlib/log"
+	xruntime "github.com/75912001/xlib/runtime"
 )
 
 // StartHTTPprof 开启http采集分析
@@ -17,7 +18,7 @@ func StartHTTPprof(addr string) {
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
-				xlog.PrintErr(xerror.GoroutinePanic, err, xruntime.Location(), debug.Stack())
+				xlog.PrintErr(xerror.GoroutinePanic, err, xruntime.Location(), string(debug.Stack()))
 			}
 			xlog.PrintInfo(xerror.GoroutineDone)
 		}()
