@@ -29,6 +29,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -37,6 +38,7 @@ type Server struct {
 	actor *Actor
 
 	QuitChan chan struct{} // 退出信号, 用于关闭服务
+	quitOnce sync.Once     // 确保只关闭一次
 
 	TCPServer  *xnettcp.Server
 	KCPServer  *xnetkcp.Server
@@ -273,9 +275,10 @@ func (p *Server) PostStart() error {
 
 	select {
 	case <-p.QuitChan:
-		xlog.GLog.Warn("Server will shutdown in a few seconds")
+		xlog.GLog.Warn("Server received internal shutdown signal")
 	case s := <-sigChan:
-		xlog.GLog.Warnf("Server got signal: %s, shutting down...", s)
+		xlog.GLog.Warnf("Server received OS signal: %s, shutting down...", s)
+		p.Shutdown()
 	}
 	if err := p.Derived.PreStop(); err != nil {
 		xlog.GLog.Warnf("pre stop err:%v ", err)
@@ -293,6 +296,15 @@ func (p *Server) PostStart() error {
 		return errors.WithMessagef(err, "server stop err. %v", xruntime.Location())
 	}
 	return nil
+}
+
+// Shutdown 显式触发服务关闭
+func (p *Server) Shutdown() {
+	p.quitOnce.Do(func() {
+		if p.QuitChan != nil {
+			close(p.QuitChan)
+		}
+	})
 }
 
 func (p *Server) PreStop() error {
