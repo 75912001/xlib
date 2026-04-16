@@ -52,7 +52,10 @@ var (
 
 // GetProperBuffer 根据所需大小返回合适的buffer
 //
-//	只适用于固定大小的 buffer, 不适用于动态增长的 buffer, 因为 buffer 的容量可能会超过初始大小, 导致放回池中(PutBuffer)时无法正确分类
+//	[⚠️] 使用限制:
+//		1. 写入数据总量不得超过请求的 size 大小, 否则 buffer 内部扩容会导致 PutBuffer 时分类错误
+//		2. 不可对返回的 buffer 进行动态追加写入(超出 size 的部分)
+//		3. 适用于已知数据大小的固定写入场景
 func GetProperBuffer(size int) *bytes.Buffer {
 	switch {
 	case size <= sSize:
@@ -65,6 +68,8 @@ func GetProperBuffer(size int) *bytes.Buffer {
 }
 
 // PutBuffer 将buffer放回适当的池中
+//
+//	[⚠️] 归还前确保 buffer 未因写入超量而扩容, 否则会被放入错误的池中
 func PutBuffer(buf *bytes.Buffer) {
 	capacity := buf.Cap()
 	switch {
