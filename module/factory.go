@@ -50,6 +50,9 @@ func (p *Factory) CreateAllModule(holder IHolder) {
 
 // GetModule 获取模块
 func (p *Factory) GetModule(moduleType Type) *Module {
+	if uint32(len(p.elements)) <= uint32(moduleType) {
+		return nil
+	}
 	return p.elements[moduleType]
 }
 
