@@ -2,6 +2,8 @@ package packet
 
 import (
 	"encoding/binary"
+
+	xerror "github.com/75912001/xlib/error"
 	xruntime "github.com/75912001/xlib/runtime"
 	"github.com/pkg/errors"
 )
@@ -28,6 +30,8 @@ func SetEndianMode(mode endianMode) {
 		GEndian = binary.LittleEndian
 	case BigEndian:
 		GEndian = binary.BigEndian
+	default:
+		panic(errors.WithMessagef(xerror.ParamNotSupport, "SetEndianMode mode %v %v", mode, xruntime.Location()))
 	}
 }
 
