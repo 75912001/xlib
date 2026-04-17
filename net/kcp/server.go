@@ -102,7 +102,9 @@ func (p *Server) Stop() {
 
 func (p *Server) handleConn(udpSession *kcp.UDPSession, iOut xcontrol.IOut) {
 	remote := NewRemote(udpSession, make(chan interface{}, *p.options.sendChanCapacity), p.options.HeaderStrategy)
-	remote.PacketLimit = p.options.NewPacketLimitFunc(p.options.MaxCntPerSec)
+	if p.options.NewPacketLimitFunc != nil {
+		remote.PacketLimit = p.options.NewPacketLimitFunc(p.options.MaxCntPerSec)
+	}
 	xlog.PrintfInfo("accept from UDPSession:%p, conv:%v, RemoteAddr.Network:%v, RemoteAddr.String:%v, remote:%p",
 		udpSession, udpSession.GetConv(), udpSession.RemoteAddr().Network(), udpSession.RemoteAddr().String(), remote)
 	if xconfig.GConfigMgr.Base.ProcessingModeIsActor() {
