@@ -2,8 +2,6 @@ package log
 
 import (
 	"context"
-	"fmt"
-	xpool "github.com/75912001/xlib/pool"
 	"time"
 )
 
@@ -62,37 +60,10 @@ func (p *entry) withCallerInfo(line int, file, funcName string) *entry {
 	return p
 }
 
-func (p *entry) getCallerInfo() string {
-	return fmt.Sprintf(callerInfoFormat, p.line, p.file, p.funcName)
-}
-
 func (p *entry) withMessage(format string, args ...any) *entry {
 	p.format = format
 	p.args = args
 	return p
-}
-
-func (p *entry) getMessage() string {
-	if p.format != "" {
-		return fmt.Sprintf(p.format, p.args...)
-	}
-
-	buf := xpool.Buffer.Get()
-	defer func() {
-		xpool.Buffer.Put(buf)
-	}()
-
-	buf.Grow(bufferCapacity)
-	for i, arg := range p.args {
-		if i == 0 {
-			buf.WriteString(fmt.Sprint(arg))
-		} else {
-			buf.WriteString(" ")
-			buf.WriteString(fmt.Sprint(arg))
-		}
-	}
-	return buf.String()
-
 }
 
 func (p *entry) WithContext(ctx context.Context) *entry {

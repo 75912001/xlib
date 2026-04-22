@@ -69,7 +69,7 @@ func formatLogData(p *entry) {
 	buf.WriteString(p.getCallerInfo())
 	buf.WriteByte(']')
 	// 处理 fields, 转换为 json 格式
-	buf.WriteString(fmt.Sprint("[{"))
+	buf.WriteString("[{")
 	for idx, v := range p.extendFields {
 		if idx%2 == 0 { //key
 			buf.WriteByte('"')
