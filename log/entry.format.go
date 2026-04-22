@@ -42,7 +42,6 @@ func formatLogData(p *entry) {
 		} else {
 			buf.WriteString("nil")
 		}
-	} else { // 没有 ctx , 则 traceID 为 ""
 	}
 	buf.WriteByte(']')
 	// UID 优先从 ctx 查找,其次查找 field 当 UID 不存在时也需要占位 值为0
