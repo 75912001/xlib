@@ -24,10 +24,12 @@ func evict[K util.IKey, V util.IClientConn](key CacheKey[K], value V) {
 }
 
 func newMod[K util.IKey]() *Mod[K] {
-	cache, _ := lru.NewWithEvict[CacheKey[K], util.IClientConn](1024*1024, evict)
-	return &Mod[K]{
-		cache: cache,
+	const wantSize = 1024 * 1024
+	cache, err := lru.NewWithEvict[CacheKey[K], util.IClientConn](wantSize, evict)
+	if err != nil {
+		panic(errors.WithMessagef(xerror.Configure, "grpc selector mod lru.NewWithEvict: %v", err))
 	}
+	return &Mod[K]{cache: cache}
 }
 
 func (p *Mod[K]) Select(ctx context.Context, key K, method string) (*grpc.ClientConn, error) {
