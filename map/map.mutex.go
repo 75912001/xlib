@@ -44,6 +44,14 @@ func (p *MapMutexMgr[TKey, TVal]) Find(key TKey) (TVal, bool) {
 	return data, ok
 }
 
+// IsExist 是否存在
+func (p *MapMutexMgr[TKey, TVal]) IsExist(key TKey) bool {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	_, exists := p.m[key]
+	return exists
+}
+
 // Get 获取元素
 func (p *MapMutexMgr[TKey, TVal]) Get(key TKey) TVal {
 	p.mu.RLock()
@@ -51,8 +59,8 @@ func (p *MapMutexMgr[TKey, TVal]) Get(key TKey) TVal {
 	return p.m[key]
 }
 
-// RadomGet 随机获取
-func (p *MapMutexMgr[TKey, TVal]) RadomGet() (TKey, TVal, bool) {
+// RandomGet 随机获取
+func (p *MapMutexMgr[TKey, TVal]) RandomGet() (TKey, TVal, bool) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	var zeroK TKey

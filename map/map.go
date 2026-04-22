@@ -47,8 +47,8 @@ func (p *MapMgr[TKey, TVal]) Get(key TKey) TVal {
 	return p.m[key]
 }
 
-// RadomGet 随机获取
-func (p *MapMgr[TKey, TVal]) RadomGet() (TKey, TVal, bool) {
+// RandomGet 随机获取
+func (p *MapMgr[TKey, TVal]) RandomGet() (TKey, TVal, bool) {
 	var zeroK TKey
 	var zeroV TVal
 	count := len(p.m)

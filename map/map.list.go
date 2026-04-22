@@ -83,6 +83,12 @@ func (p *ListOrderedMap[K, V]) Find(key K) (V, bool) {
 	return zero, false
 }
 
+// IsExist 是否存在
+func (p *ListOrderedMap[K, V]) IsExist(key K) bool {
+	_, exists := p.m[key]
+	return exists
+}
+
 // Foreach 遍历元素
 //
 //	f 返回 false 时停止遍历
