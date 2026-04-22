@@ -239,7 +239,10 @@ func (p *mgr) logf(entry *entry, level uint32, format string, v ...any) {
 		if !ok {
 			line = 0
 		} else {
-			funcName = runtime.FuncForPC(pc).Name()
+			fn := runtime.FuncForPC(pc)
+			if fn != nil {
+				funcName = fn.Name()
+			}
 		}
 		entry.withCallerInfo(line, file, funcName)
 	}
