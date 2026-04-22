@@ -32,9 +32,13 @@ func formatLogData(p *entry) {
 	buf.WriteByte('[')
 	buf.WriteString(TraceIDKey)
 	buf.WriteByte(':')
-	if p.ctx != nil { // 处理 ctx 中的 traceID
-		if traceIdVal := p.ctx.Value(TraceIDKey); traceIdVal != nil {
-			buf.WriteString(traceIdVal.(string))
+	if p.ctx != nil {
+		if traceIDVal := p.ctx.Value(TraceIDKey); traceIDVal != nil {
+			if s, ok := traceIDVal.(string); ok {
+				buf.WriteString(s)
+			} else {
+				_, _ = fmt.Fprintf(buf, "%v", traceIDVal)
+			}
 		} else {
 			buf.WriteString("nil")
 		}
