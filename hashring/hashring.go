@@ -31,9 +31,13 @@ func (p *HashRing[NODE]) AddNode(node NODE) *HashRing[NODE] {
 	return p.AddNodeWithWeight(node, 1)
 }
 
+// AddNodeWithWeight 添加物理节点；weight 为 0 时按 1 处理，避免出现「在列表中但环上无虚拟点」及总权重为 0 的除零。
 func (p *HashRing[NODE]) AddNodeWithWeight(node NODE, weight uint32) *HashRing[NODE] {
 	if p.IsNodeExist(node) { // 已存在
 		return p
+	}
+	if weight == 0 {
+		weight = 1
 	}
 
 	// 节点
@@ -123,10 +127,17 @@ func (p *HashRing[NODE]) getNodePos(key string) (pos int, ok bool) {
 
 // 生成哈希环
 func (p *HashRing[NODE]) generateCircle() {
-	// 总权重用 uint64 累加，避免多节点时 uint32 溢出
+	// 总权重用 uint64 累加；权重为 0 按 1 计，与 AddNodeWithWeight 一致并避免 totalWeight==0 除零
 	var totalWeight uint64
 	for _, v := range p.weights {
-		totalWeight += uint64(v)
+		w := v
+		if w == 0 {
+			w = 1
+		}
+		totalWeight += uint64(w)
+	}
+	if totalWeight == 0 {
+		return
 	}
 
 	nodeCount := uint64(len(p.nodes)) // 节点数量
@@ -134,6 +145,9 @@ func (p *HashRing[NODE]) generateCircle() {
 		weight := uint32(1)
 		if v, ok := p.weights[node]; ok {
 			weight = v
+		}
+		if weight == 0 {
+			weight = 1
 		}
 		// 虚拟节点数量：须先提升到 float64 再相乘，禁止 uint32 先乘（易溢出回绕）
 		factor := math.Floor(
