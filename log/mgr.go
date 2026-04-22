@@ -8,10 +8,6 @@ package log
 
 import (
 	"context"
-	xerror "github.com/75912001/xlib/error"
-	xruntime "github.com/75912001/xlib/runtime"
-	xtime "github.com/75912001/xlib/time"
-	"github.com/pkg/errors"
 	"io"
 	"log"
 	"os"
@@ -20,6 +16,11 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	xerror "github.com/75912001/xlib/error"
+	xruntime "github.com/75912001/xlib/runtime"
+	xtime "github.com/75912001/xlib/time"
+	"github.com/pkg/errors"
 )
 
 // NewMgr 创建日志管理器
@@ -217,7 +218,10 @@ func (p *mgr) log(entry *entry, level uint32, v ...any) {
 		if !ok {
 			line = 0
 		} else {
-			funcName = runtime.FuncForPC(pc).Name()
+			fn := runtime.FuncForPC(pc)
+			if fn != nil {
+				funcName = fn.Name()
+			}
 		}
 		entry.withCallerInfo(line, file, funcName)
 	}
