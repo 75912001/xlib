@@ -123,20 +123,22 @@ func (p *HashRing[NODE]) getNodePos(key string) (pos int, ok bool) {
 
 // 生成哈希环
 func (p *HashRing[NODE]) generateCircle() {
-	// 总权重
-	totalWeight := uint32(0)
+	// 总权重用 uint64 累加，避免多节点时 uint32 溢出
+	var totalWeight uint64
 	for _, v := range p.weights {
-		totalWeight += v
+		totalWeight += uint64(v)
 	}
 
-	nodeCount := uint32(len(p.nodes)) // 节点数量
+	nodeCount := uint64(len(p.nodes)) // 节点数量
 	for _, node := range p.nodes {
 		weight := uint32(1)
 		if v, ok := p.weights[node]; ok {
 			weight = v
 		}
-		// 计算虚拟节点数量
-		factor := math.Floor(float64(p.virtualNodeCount*nodeCount*weight) / float64(totalWeight))
+		// 虚拟节点数量：须先提升到 float64 再相乘，禁止 uint32 先乘（易溢出回绕）
+		factor := math.Floor(
+			float64(p.virtualNodeCount) * float64(nodeCount) * float64(weight) / float64(totalWeight),
+		)
 		for i := 0; i < int(factor); i++ {
 			virtualNode := fmt.Sprintf("%v.%v", node, i)
 			// 16位的摘要
