@@ -19,30 +19,38 @@ func ShardKeyServerInterceptor() grpc.UnaryServerInterceptor {
 				// 根据类型转换值
 				opt := xgrpcprotoregistry.GetOptions(info.FullMethod)
 				var value any
-				var err error
 
 				switch opt.ShardKeyFieldType {
 				case xgrpcproto.ShardKeyFieldType_ShardKeyFieldType_STRING:
 					value = values[0]
+				// 解析失败时置零类型零值（与旧行为一致）；须写入与 ShardKeyFieldType 一致的动态类型，供下游 ctx.Value.(T) 断言
 				case xgrpcproto.ShardKeyFieldType_ShardKeyFieldType_INT32:
-					value, err = strconv.ParseInt(values[0], 10, 32)
+					parsed, err := strconv.ParseInt(values[0], 10, 32)
 					if err != nil {
 						value = int32(0)
+					} else {
+						value = int32(parsed) // ParseInt 返回 int64，不能直接赋给需 int32 的 context
 					}
 				case xgrpcproto.ShardKeyFieldType_ShardKeyFieldType_INT64:
-					value, err = strconv.ParseInt(values[0], 10, 64)
+					parsed, err := strconv.ParseInt(values[0], 10, 64)
 					if err != nil {
 						value = int64(0)
+					} else {
+						value = parsed
 					}
 				case xgrpcproto.ShardKeyFieldType_ShardKeyFieldType_UINT32:
-					value, err = strconv.ParseUint(values[0], 10, 32)
+					parsed, err := strconv.ParseUint(values[0], 10, 32)
 					if err != nil {
 						value = uint32(0)
+					} else {
+						value = uint32(parsed) // ParseUint 返回 uint64
 					}
 				case xgrpcproto.ShardKeyFieldType_ShardKeyFieldType_UINT64:
-					value, err = strconv.ParseUint(values[0], 10, 64)
+					parsed, err := strconv.ParseUint(values[0], 10, 64)
 					if err != nil {
 						value = uint64(0)
+					} else {
+						value = parsed
 					}
 				default:
 					return nil, errors.WithMessage(xerror.NotSupport, xruntime.Location())
