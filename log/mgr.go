@@ -119,7 +119,7 @@ func doLog(p *mgr) {
 			}
 		}
 		if *p.options.isWriteFile {
-			p.loggerSlice[v.level].Print(v.outString)
+			writeLogLine(p, v)
 		}
 		p.options.entryPoolOptions.put(v)
 	}
@@ -134,6 +134,15 @@ func (p *mgr) SetLevel(level uint32) error {
 	}
 	p.options.WithLevel(level)
 	return nil
+}
+
+// writeLogLine 将已格式化字节写入对应级别 Writer, 避免整行 string 与 log.Print 再分配
+func writeLogLine(p *mgr, e *entry) {
+	w := p.loggerSlice[e.level].Writer()
+	if w == nil {
+		return
+	}
+	_, _ = w.Write(e.outBytes)
 }
 
 // newWriters 初始化各级别的日志输出
@@ -199,7 +208,7 @@ func (p *mgr) callBack(entry *entry) {
 	if !p.options.levelSubscribe.isSubscribe(entry.level) {
 		return
 	}
-	p.options.levelSubscribe.callBack.Override(entry.level, entry.outString)
+	p.options.levelSubscribe.callBack.Override(entry.level, string(entry.outBytes))
 	_ = p.options.levelSubscribe.callBack.Execute()
 }
 

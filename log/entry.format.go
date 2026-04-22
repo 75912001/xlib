@@ -1,6 +1,7 @@
 package log
 
 import (
+	"bytes"
 	"fmt"
 	xpool "github.com/75912001/xlib/pool"
 	"strconv"
@@ -94,6 +95,21 @@ func formatLogData(p *entry) {
 	buf.WriteString("}]")
 	// 日志消息(与主缓冲合并,避免 getMessage 二次缓冲与 String 分配)
 	buf.WriteByte(' ')
-	buf.WriteString(p.getMessage())
-	p.outString = buf.String()
+	appendLogMessage(buf, p)
+
+	p.outBytes = append(p.outBytes[:0], buf.Bytes()...)
+}
+
+// appendLogMessage 将用户消息写入 buf(与 formatLogData 共用同一缓冲)
+func appendLogMessage(buf *bytes.Buffer, p *entry) {
+	if p.format != "" {
+		_, _ = fmt.Fprintf(buf, p.format, p.args...)
+		return
+	}
+	for i, arg := range p.args {
+		if i > 0 {
+			_ = buf.WriteByte(' ')
+		}
+		_, _ = fmt.Fprintf(buf, "%v", arg)
+	}
 }

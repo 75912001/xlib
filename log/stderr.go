@@ -15,7 +15,9 @@ func PrintErr(v ...any) {
 	funcName := xerror.Unknown.Name()
 	pc, file, line, ok := runtime.Caller(calldepth1)
 	if ok {
-		funcName = runtime.FuncForPC(pc).Name()
+		if fn := runtime.FuncForPC(pc); fn != nil {
+			funcName = fn.Name()
+		}
 	}
 	element := newEntry().
 		withLevel(LevelError).
@@ -23,7 +25,7 @@ func PrintErr(v ...any) {
 		withCallerInfo(line, file, funcName).
 		withMessage("", v...)
 	formatLogData(element)
-	_ = stdErr.Output(calldepth2, element.outString)
+	_ = stdErr.Output(calldepth2, string(element.outBytes))
 }
 
 // PrintfErr 输出到os.Stderr
@@ -31,7 +33,9 @@ func PrintfErr(format string, v ...any) {
 	funcName := xerror.Unknown.Name()
 	pc, file, line, ok := runtime.Caller(calldepth1)
 	if ok {
-		funcName = runtime.FuncForPC(pc).Name()
+		if fn := runtime.FuncForPC(pc); fn != nil {
+			funcName = fn.Name()
+		}
 	}
 	element := newEntry().
 		withLevel(LevelError).
@@ -39,5 +43,5 @@ func PrintfErr(format string, v ...any) {
 		withCallerInfo(line, file, funcName).
 		withMessage(format, v...)
 	formatLogData(element)
-	_ = stdErr.Output(calldepth2, element.outString)
+	_ = stdErr.Output(calldepth2, string(element.outBytes))
 }

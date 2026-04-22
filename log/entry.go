@@ -24,7 +24,7 @@ type entry struct {
 
 	ctx          context.Context
 	extendFields ExtendFields // [string,any] key,value;key,value...
-	outString    string       // 输出的字符串
+	outBytes     []byte       // 格式化后的整行(无尾换行), 供写文件/订阅时 string(outBytes)
 }
 
 func newEntry() *entry {
@@ -40,7 +40,7 @@ func (p *entry) reset() {
 	p.args = p.args[0:0]
 	p.ctx = nil
 	p.extendFields = nil
-	p.outString = ""
+	p.outBytes = p.outBytes[:0]
 }
 
 func (p *entry) withLevel(level uint32) *entry {
