@@ -15,8 +15,7 @@ func formatLogData(p *entry) {
 	defer func() {
 		xpool.Buffer.Put(buf)
 	}()
-	capacity := buf.Cap()
-	if capacity < bufferCapacity {
+	if buf.Cap() < bufferCapacity {
 		buf.Grow(bufferCapacity)
 	}
 
@@ -66,25 +65,25 @@ func formatLogData(p *entry) {
 	buf.WriteByte(']')
 	// 堆栈
 	buf.WriteByte('[')
-	buf.WriteString(p.getCallerInfo())
+	_, _ = fmt.Fprintf(buf, callerInfoFormat, p.line, p.file, p.funcName)
 	buf.WriteByte(']')
 	// 处理 fields, 转换为 json 格式
 	buf.WriteString("[{")
 	for idx, v := range p.extendFields {
-		if idx%2 == 0 { //key
+		if idx%2 == 0 { // key
 			buf.WriteByte('"')
 			if str, ok := v.(string); ok {
 				buf.WriteString(str)
 			} else {
-				buf.WriteString(fmt.Sprint(v))
+				_, _ = fmt.Fprintf(buf, "%v", v)
 			}
 			buf.WriteString(`":`)
-		} else { //val
+		} else { // val
 			buf.WriteByte('"')
 			if str, ok := v.(string); ok {
 				buf.WriteString(str)
 			} else {
-				buf.WriteString(fmt.Sprint(v))
+				_, _ = fmt.Fprintf(buf, "%v", v)
 			}
 			buf.WriteByte('"')
 			if idx+1 < len(p.extendFields) {
@@ -92,8 +91,8 @@ func formatLogData(p *entry) {
 			}
 		}
 	}
-	buf.WriteString(fmt.Sprint("}]"))
-	// 日志消息
+	buf.WriteString("}]")
+	// 日志消息(与主缓冲合并,避免 getMessage 二次缓冲与 String 分配)
 	buf.WriteByte(' ')
 	buf.WriteString(p.getMessage())
 	p.outString = buf.String()
