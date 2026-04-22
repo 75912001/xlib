@@ -24,20 +24,45 @@ func Sel(ctx context.Context, method string, shardKeyValue any) (context.Context
 	var strValue string
 	switch opt.ShardKeyFieldType {
 	case xgrpcproto.ShardKeyFieldType_ShardKeyFieldType_STRING:
-		strValue = (shardKeyValue).(string)
-		grpcClientConn, err = stringSelectors.Sel(ctx, shardKeyValue.(string), method)
+		v, ok := shardKeyValue.(string)
+		if !ok {
+			return ctx, nil, errors.WithMessagef(xerror.GRPCNotSupportShardKeyType,
+				"method %s shard key: want string, got %T", method, shardKeyValue)
+		}
+		strValue = v
+		grpcClientConn, err = stringSelectors.Sel(ctx, v, method)
 	case xgrpcproto.ShardKeyFieldType_ShardKeyFieldType_INT32:
-		strValue = strconv.FormatInt(int64(shardKeyValue.(int32)), 10)
-		grpcClientConn, err = int32Selectors.Sel(ctx, shardKeyValue.(int32), method)
+		v, ok := shardKeyValue.(int32)
+		if !ok {
+			return ctx, nil, errors.WithMessagef(xerror.GRPCNotSupportShardKeyType,
+				"method %s shard key: want int32, got %T", method, shardKeyValue)
+		}
+		strValue = strconv.FormatInt(int64(v), 10)
+		grpcClientConn, err = int32Selectors.Sel(ctx, v, method)
 	case xgrpcproto.ShardKeyFieldType_ShardKeyFieldType_INT64:
-		strValue = strconv.FormatInt(shardKeyValue.(int64), 10)
-		grpcClientConn, err = int64Selectors.Sel(ctx, shardKeyValue.(int64), method)
+		v, ok := shardKeyValue.(int64)
+		if !ok {
+			return ctx, nil, errors.WithMessagef(xerror.GRPCNotSupportShardKeyType,
+				"method %s shard key: want int64, got %T", method, shardKeyValue)
+		}
+		strValue = strconv.FormatInt(v, 10)
+		grpcClientConn, err = int64Selectors.Sel(ctx, v, method)
 	case xgrpcproto.ShardKeyFieldType_ShardKeyFieldType_UINT32:
-		strValue = strconv.FormatUint(uint64(shardKeyValue.(uint32)), 10)
-		grpcClientConn, err = uint32Selectors.Sel(ctx, shardKeyValue.(uint32), method)
+		v, ok := shardKeyValue.(uint32)
+		if !ok {
+			return ctx, nil, errors.WithMessagef(xerror.GRPCNotSupportShardKeyType,
+				"method %s shard key: want uint32, got %T", method, shardKeyValue)
+		}
+		strValue = strconv.FormatUint(uint64(v), 10)
+		grpcClientConn, err = uint32Selectors.Sel(ctx, v, method)
 	case xgrpcproto.ShardKeyFieldType_ShardKeyFieldType_UINT64:
-		strValue = strconv.FormatUint(shardKeyValue.(uint64), 10)
-		grpcClientConn, err = uint64Selectors.Sel(ctx, shardKeyValue.(uint64), method)
+		v, ok := shardKeyValue.(uint64)
+		if !ok {
+			return ctx, nil, errors.WithMessagef(xerror.GRPCNotSupportShardKeyType,
+				"method %s shard key: want uint64, got %T", method, shardKeyValue)
+		}
+		strValue = strconv.FormatUint(v, 10)
+		grpcClientConn, err = uint64Selectors.Sel(ctx, v, method)
 	default:
 		return ctx, nil, errors.WithMessage(xerror.GRPCNotSupportShardKeyType, xruntime.Location())
 	}
