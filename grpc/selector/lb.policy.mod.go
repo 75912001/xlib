@@ -71,8 +71,9 @@ func (p *Mod[K]) Select(ctx context.Context, key K, method string) (*grpc.Client
 	default:
 		return nil, errors.WithMessage(xerror.NotSupport, xruntime.Location())
 	}
-	// 计算
-	idx %= len(clientConnSlice)
+	// 归一化到 [0, n)：Go 的 % 与被除数同号，负数 key 时 idx%n 仍为负会越界 panic
+	n := len(clientConnSlice)
+	idx = ((idx % n) + n) % n
 	clientConn := clientConnSlice[idx]
 	// 更新到缓存中
 	p.cache.Add(ck, clientConn)
