@@ -1,8 +1,8 @@
 package error
 
 import (
+	"errors"
 	"net"
-	"strings"
 )
 
 // IsNetErrorTimeout checks if a network error is a timeout.
@@ -12,6 +12,7 @@ func IsNetErrorTimeout(err error) bool {
 }
 
 // IsNetErrClosing checks if a network error is due to a closed connection.
+// 使用 errors.Is 以识别包装后的 net.ErrClosed，见 net.ErrClosed 文档说明。
 func IsNetErrClosing(err error) bool {
-	return err != nil && strings.Contains(err.Error(), "use of closed network connection")
+	return errors.Is(err, net.ErrClosed)
 }
