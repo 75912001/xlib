@@ -182,6 +182,14 @@ func (p *Etcd) KeepAlive(ctx context.Context) error {
 					continue
 				}
 				if ok {
+					// 官方 go.etcd.io/etcd/client/v3 当前不会向 channel 发送 nil
+					// 若将来或其它实现出现 (nil,true) 此处避免 tight loop 并尊重取消
+					xlog.PrintErr("etcd lease KeepAlive: unexpected nil response while channel open; backing off")
+					select {
+					case <-ctx.Done():
+						return
+					case <-time.After(200 * time.Millisecond):
+					}
 					continue
 				}
 				// abnormal
