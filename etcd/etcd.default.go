@@ -351,42 +351,51 @@ func (p *Etcd) WatchPrefixIntoChan() (err error) {
 			xlog.PrintInfo(xerror.GoroutineDone)
 		}()
 		for v := range eventChan {
-			kv := v.Events[0].Kv
-			key := string(kv.Key)
-			Value := string(kv.Value)
-			var valueJson *ValueJson
-			if len(Value) != 0 {
-				valueJson = ValueString2Json(Value)
+			if err := v.Err(); err != nil {
+				xlog.PrintErr("etcd watch response error", err)
+				continue
 			}
-			_, oldExist := GRegistry.Find(key)
-			GRegistry.Update(key, valueJson)
-			var cb xcontrol.ICallBack
-			if oldExist { // 已存在
-				if valueJson == nil { // 删除
-					if p.options.DelCallback != nil {
-						cb = p.options.DelCallback.Clone(key)
-					}
-				} else { // 更新
-					if p.options.UpdateCallback != nil {
-						cb = p.options.UpdateCallback.Clone(key, valueJson)
-					}
-				}
-			} else { // 不存在
-				if valueJson == nil { // 删除,但不存在,无动作
+			for _, ev := range v.Events {
+				if ev.Kv == nil {
 					continue
-				} else { // 新增
-					if p.options.AddCallback != nil {
-						cb = p.options.AddCallback.Clone(key, valueJson)
+				}
+				kv := ev.Kv
+				key := string(kv.Key)
+				Value := string(kv.Value)
+				var valueJson *ValueJson
+				if len(Value) != 0 {
+					valueJson = ValueString2Json(Value)
+				}
+				_, oldExist := GRegistry.Find(key)
+				GRegistry.Update(key, valueJson)
+				var cb xcontrol.ICallBack
+				if oldExist { // 已存在
+					if valueJson == nil { // 删除
+						if p.options.DelCallback != nil {
+							cb = p.options.DelCallback.Clone(key)
+						}
+					} else { // 更新
+						if p.options.UpdateCallback != nil {
+							cb = p.options.UpdateCallback.Clone(key, valueJson)
+						}
+					}
+				} else { // 不存在
+					if valueJson == nil { // 删除,但不存在,无动作
+						continue
+					} else { // 新增
+						if p.options.AddCallback != nil {
+							cb = p.options.AddCallback.Clone(key, valueJson)
+						}
 					}
 				}
-			}
-			if cb != nil {
-				p.options.iOut.Send(
-					&xcontrol.Event{
-						ISwitch:   xcontrol.NewSwitchButton(true),
-						ICallBack: cb,
-					},
-				)
+				if cb != nil {
+					p.options.iOut.Send(
+						&xcontrol.Event{
+							ISwitch:   xcontrol.NewSwitchButton(true),
+							ICallBack: cb,
+						},
+					)
+				}
 			}
 		}
 	}()
