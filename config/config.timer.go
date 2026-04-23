@@ -6,47 +6,48 @@ import (
 )
 
 type Timer struct {
-	// 秒级定时器 扫描间隔(纳秒) 1000*1000*100=100000000 为100毫秒 [default]: timer.ScanSecondDurationDefault
-	scanSecondDuration *time.Duration `yaml:"scanSecondDuration"`
-	// 毫秒级定时器 扫描间隔(纳秒) 1000*1000*100=100000000 为25毫秒 [default]: timer.ScanMillisecondDurationDefault
-	scanMillisecondDuration *time.Duration `yaml:"scanMillisecondDuration"`
-	// 毫秒级定时器-使用类型
-	millisecondType *xtimerconstants.MillisecondType `yaml:"millisecondType"` // [default]: timer.MillisecondTypeList
+	// 秒级定时器扫描间隔 [default]: timer.ScanSecondDurationDefault
+	// YAML 须为 Go duration 字面量,如 100ms, 1s 不可写裸整数纳秒(yaml 无法解码为 Duration)
+	ScanSecondDuration *time.Duration `yaml:"scanSecondDuration"`
+	// 毫秒级定时器扫描间隔 [default]: timer.ScanMillisecondDurationDefault
+	ScanMillisecondDuration *time.Duration `yaml:"scanMillisecondDuration"`
+	// 毫秒级定时器实现类型 [default]: timer.MillisecondTypeList
+	MillisecondType *xtimerconstants.MillisecondType `yaml:"millisecondType"`
 }
 
 func (p *Timer) GetScanSecondDuration() time.Duration {
-	if p.scanSecondDuration != nil {
-		return *p.scanSecondDuration
+	if p.ScanSecondDuration != nil {
+		return *p.ScanSecondDuration
 	}
 	return xtimerconstants.ScanSecondDurationDefault
 }
 
 func (p *Timer) GetScanMillisecondDuration() time.Duration {
-	if p.scanMillisecondDuration != nil {
-		return *p.scanMillisecondDuration
+	if p.ScanMillisecondDuration != nil {
+		return *p.ScanMillisecondDuration
 	}
 	return xtimerconstants.ScanMillisecondDurationDefault
 }
 
 func (p *Timer) GetMillisecondType() xtimerconstants.MillisecondType {
-	if p.millisecondType != nil {
-		return *p.millisecondType
+	if p.MillisecondType != nil {
+		return *p.MillisecondType
 	}
 	return xtimerconstants.MillisecondTypeList
 }
 
 func (p *Timer) Configure() error {
-	if p.scanSecondDuration == nil {
+	if p.ScanSecondDuration == nil {
 		defaultValue := xtimerconstants.ScanSecondDurationDefault
-		p.scanSecondDuration = &defaultValue
+		p.ScanSecondDuration = &defaultValue
 	}
-	if p.scanMillisecondDuration == nil {
+	if p.ScanMillisecondDuration == nil {
 		defaultValue := xtimerconstants.ScanMillisecondDurationDefault
-		p.scanMillisecondDuration = &defaultValue
+		p.ScanMillisecondDuration = &defaultValue
 	}
-	if p.millisecondType == nil {
+	if p.MillisecondType == nil {
 		defaultValue := xtimerconstants.MillisecondTypeList
-		p.millisecondType = &defaultValue
+		p.MillisecondType = &defaultValue
 	}
 	return nil
 }
