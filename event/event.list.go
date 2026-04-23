@@ -2,6 +2,10 @@
 // 使用 list.List 作为事件通道
 // 优点: 不需要预估事件通道容量, 不会丢失事件
 // 缺点: 性能不如 channel
+//
+// ListMgr 约定: 待处理数据在链表 events 中 notifyChan 仅表示[当前有需要处理的工作],
+// 与事件条数不必一一对应. worker 每次收到通知会持锁将队列排空后再回到 select,
+// 因此 notify 在缓冲满时走 default 丢弃的是冗余唤醒, 不表示丢弃链表中的事件
 package event
 
 import (
@@ -23,7 +27,7 @@ type Manager ListMgr
 type ListMgr struct {
 	queueMu    sync.Mutex // 保护 events
 	events     *list.List
-	notifyChan chan struct{} // 通知有新消息
+	notifyChan chan struct{} // [有活要做] 的唤醒信号. 容量为 workerCount, 可与多条事件合并对应
 
 	onFunction  xcontrol.OnFunction // 事件处理器
 	workerCount uint32              // 工作协程数量
@@ -77,7 +81,8 @@ func (p *ListMgr) Stop() {
 	}()
 }
 
-// Send 发送事件到管理器
+// Send 将事件入队，并尽量发送一条处理通知。
+// 事件本体在 events, 通知只提示 worker 检查队列,缓冲满时省略发送(冗余通知可丢)
 func (p *ListMgr) Send(events ...any) {
 	p.queueMu.Lock()
 	for _, event := range events {
@@ -86,7 +91,7 @@ func (p *ListMgr) Send(events ...any) {
 	p.queueMu.Unlock()
 	select {
 	case p.notifyChan <- struct{}{}:
-	default: // channel 已满，说明所有 worker 都在工作
+	default: // 缓冲已满: 已有足够待消费的唤醒, 不必再发
 	}
 }
 
@@ -108,6 +113,7 @@ func (p *ListMgr) worker() {
 		case <-p.ctx.Done():
 			return
 		case <-p.notifyChan:
+			// 单次唤醒内排空链表; 期间其它 Send 入队的元素也在本轮或后续 onFunction 中处理
 			for {
 				p.queueMu.Lock()
 				element := p.events.Front()
