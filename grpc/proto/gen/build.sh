@@ -3,7 +3,7 @@
 # 创建 protoc grpc 插件
 
 # 输出目录的绝对路径
-outputRealPath=$(realpath ../../../../message/)
+outputRealPath=$(realpath ../bin/)
 
 ############################################################
 
