@@ -1,8 +1,9 @@
 package main
 
 import (
-	"google.golang.org/protobuf/compiler/protogen"
 	"strings"
+
+	"google.golang.org/protobuf/compiler/protogen"
 )
 
 func genClient(g *protogen.GeneratedFile, file *protogen.File) {
@@ -56,7 +57,7 @@ func clientStreamGenerateMethod(g *protogen.GeneratedFile, service *protogen.Ser
 		g.P("type ", getIStreamServiceMethodClient(sn, mn), " interface {")
 		g.P("\t", mn, "Pre(stream ", getService_MethodClient(sn, mn), ") error // 预处理-新创建stream")
 		g.P("\t", mn, "(client *", getXStreamServiceMethodClient(sn, mn), ", messageWrapper *",
-			getServiceMessageWrapper(sn), ", stream ", getService_MethodClient(sn, mn), ") error // 处理")
+			method.Output.GoIdent, ", stream ", getService_MethodClient(sn, mn), ") error // 处理")
 		g.P("\t", mn, "Post(stream ", getService_MethodClient(sn, mn), ") error // 后处理-关闭stream")
 		g.P("}")
 		g.P()
