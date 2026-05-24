@@ -2,10 +2,11 @@ package error
 
 import (
 	"fmt"
+	"strconv"
+
 	xmap "github.com/75912001/xlib/map"
 	xpool "github.com/75912001/xlib/pool"
 	"github.com/pkg/errors"
-	"strconv"
 )
 
 type Error struct {
@@ -98,4 +99,8 @@ func newError(code uint32) *Error {
 	return &Error{
 		code: code,
 	}
+}
+
+func (p *Error) Code() uint32 {
+	return p.code
 }
