@@ -25,7 +25,7 @@ func genFunction(g *protogen.GeneratedFile, file *protogen.File) {
 		g.P("\t", lowerFirst(getXServiceClient(sn)), " *", getXServiceClient(sn))
 		for _, m := range service.Methods {
 			if m.Desc.IsStreamingClient() || m.Desc.IsStreamingServer() { // stream
-				g.P("\t", lowerFirst(getXStreamServiceMethodClient(sn, m.GoName)), " ", getXStreamServiceMethodClient(sn, m.GoName))
+				g.P("\t", getXStreamServiceMethodClient(sn, m.GoName), " ", getXStreamServiceMethodClient(sn, m.GoName))
 			}
 		}
 		g.P("}")
@@ -44,7 +44,7 @@ func genFunction(g *protogen.GeneratedFile, file *protogen.File) {
 		for _, m := range service.Methods {
 			if m.Desc.IsStreamingClient() || m.Desc.IsStreamingServer() { // stream
 				g.P("\t{")
-				g.P("\t\t", lowerFirst(sn), ".", lowerFirst(getXStreamServiceMethodClient(sn, m.GoName)),
+				g.P("\t\t", lowerFirst(sn), ".", getXStreamServiceMethodClient(sn, m.GoName),
 					".", getService_MethodClient(sn, m.GoName), " , err = ", lowerFirst(sn), ".",
 					lowerFirst(getXServiceClient(sn)), ".", m.GoName, "(", contextPackage.Ident("Background"), "())")
 				g.P("\t\tif err != nil {")
@@ -76,7 +76,7 @@ func genFunction(g *protogen.GeneratedFile, file *protogen.File) {
 		g.P("func (p *", getXService(sn), ") Start() error {")
 		for _, m := range service.Methods {
 			if m.Desc.IsStreamingClient() || m.Desc.IsStreamingServer() { // stream
-				g.P("\t_=p.", lowerFirst(getXStreamServiceMethodClient(sn, m.GoName)), ".Start()")
+				g.P("\t_=p.", getXStreamServiceMethodClient(sn, m.GoName), ".Start()")
 			}
 		}
 		g.P("\treturn nil")
@@ -88,7 +88,7 @@ func genFunction(g *protogen.GeneratedFile, file *protogen.File) {
 		g.P("\tvar err error")
 		for _, m := range service.Methods {
 			if m.Desc.IsStreamingClient() || m.Desc.IsStreamingServer() { // stream
-				g.P("\terr = p.", lowerFirst(getXStreamServiceMethodClient(sn, m.GoName)),
+				g.P("\terr = p.", getXStreamServiceMethodClient(sn, m.GoName),
 					".", getService_MethodClient(sn, m.GoName), ".CloseSend()")
 				g.P("\tif err != nil {")
 				g.P("\t\treturn ", errorsPackage.Ident("WithMessage"), "(err, ", xruntimePackage.Ident("Location"), "())")
