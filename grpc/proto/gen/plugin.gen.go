@@ -88,10 +88,12 @@ func genFunction(g *protogen.GeneratedFile, file *protogen.File) {
 		g.P("\tvar err error")
 		for _, m := range service.Methods {
 			if m.Desc.IsStreamingClient() || m.Desc.IsStreamingServer() { // stream
-				g.P("\terr = p.", getXStreamServiceMethodClient(sn, m.GoName),
+				g.P("\tif p.", getXStreamServiceMethodClient(sn, m.GoName), ".", getService_MethodClient(sn, m.GoName), " != nil {")
+				g.P("\t\terr = p.", getXStreamServiceMethodClient(sn, m.GoName),
 					".", getService_MethodClient(sn, m.GoName), ".CloseSend()")
-				g.P("\tif err != nil {")
-				g.P("\t\treturn ", errorsPackage.Ident("WithMessage"), "(err, ", xruntimePackage.Ident("Location"), "())")
+				g.P("\t\tif err != nil {")
+				g.P("\t\t\treturn ", errorsPackage.Ident("WithMessage"), "(err, ", xruntimePackage.Ident("Location"), "())")
+				g.P("\t\t}")
 				g.P("\t}")
 			}
 		}
