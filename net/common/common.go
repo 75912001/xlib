@@ -1,10 +1,11 @@
 package common
 
 import (
-	xruntime "github.com/75912001/xlib/runtime"
-	"github.com/pkg/errors"
 	"net"
 	"time"
+
+	xruntime "github.com/75912001/xlib/runtime"
+	"github.com/pkg/errors"
 )
 
 const ServerNetTypeNameTCP = "tcp"
@@ -17,11 +18,10 @@ type DisconnectReason int
 const (
 	DisconnectReasonUnknown DisconnectReason = 0 // 未知原因
 
-	DisconnectReasonClientShutdown DisconnectReason = 1 // 客户端关闭
-	DisconnectReasonClientLogic    DisconnectReason = 2 // 客户端逻辑
-	DisconnectReasonServerShutdown DisconnectReason = 3 // 服务端关闭
-	DisconnectReasonShutdown       DisconnectReason = 4 // 关闭-主动关闭
-	DisconnectReasonPeerShutdown   DisconnectReason = 5 // 对端关闭
+	DisconnectReasonClientShutdown DisconnectReason = 1   // 客户端关闭
+	DisconnectReasonClientLogic    DisconnectReason = 2   // 客户端逻辑
+	DisconnectReasonServerShutdown DisconnectReason = 101 // 服务端关闭
+	DisconnectReasonPeerShutdown   DisconnectReason = 201 // 对端关闭
 	// [10000,20000] 留给业务使用
 	// ...
 )
