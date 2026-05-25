@@ -16,14 +16,15 @@ type selectors[K xgrpcutil.IKey] struct {
 }
 
 func newSelectors[K xgrpcutil.IKey]() *selectors[K] {
-	switch any(K(0)).(type) {
+	var zero K
+	switch any(zero).(type) {
 	case string:
 	case int32:
 	case int64:
 	case uint32:
 	case uint64:
 	default:
-		panic(errors.WithMessagef(xerror.NotSupport, "key type %T not support", K(0)))
+		panic(errors.WithMessagef(xerror.NotSupport, "key type %T not support", zero))
 	}
 	return &selectors[K]{
 		MapMgr: xmap.NewMapMgr[string, xgrpcutil.IPolicy[K]](),
@@ -47,6 +48,10 @@ func Init() {
 	uint64Mod := newMod[uint64]()
 
 	strHashRing := newHashRing[string]()
+	int32HashRing := newHashRing[int32]()
+	int64HashRing := newHashRing[int64]()
+	uint32HashRing := newHashRing[uint32]()
+	uint64HashRing := newHashRing[uint64]()
 
 	for k, v := range xgrpcprotoregistry.GMethodOptions {
 		switch v.LoadBalancePolicy {
@@ -67,12 +72,16 @@ func Init() {
 			}
 		case xgrpcproto.LoadBalancePolicy_LoadBalancePolicy_RingHash:
 			switch v.ShardKeyFieldType {
-			case xgrpcproto.ShardKeyFieldType_ShardKeyFieldType_STRING,
-				xgrpcproto.ShardKeyFieldType_ShardKeyFieldType_INT32,
-				xgrpcproto.ShardKeyFieldType_ShardKeyFieldType_INT64,
-				xgrpcproto.ShardKeyFieldType_ShardKeyFieldType_UINT32,
-				xgrpcproto.ShardKeyFieldType_ShardKeyFieldType_UINT64:
+			case xgrpcproto.ShardKeyFieldType_ShardKeyFieldType_STRING:
 				stringSelectors.MapMgr.Add(k, strHashRing)
+			case xgrpcproto.ShardKeyFieldType_ShardKeyFieldType_INT32:
+				int32Selectors.MapMgr.Add(k, int32HashRing)
+			case xgrpcproto.ShardKeyFieldType_ShardKeyFieldType_INT64:
+				int64Selectors.MapMgr.Add(k, int64HashRing)
+			case xgrpcproto.ShardKeyFieldType_ShardKeyFieldType_UINT32:
+				uint32Selectors.MapMgr.Add(k, uint32HashRing)
+			case xgrpcproto.ShardKeyFieldType_ShardKeyFieldType_UINT64:
+				uint64Selectors.MapMgr.Add(k, uint64HashRing)
 			default:
 				panic(errors.WithMessagef(xerror.NotSupport, "shard key type %s not support for method %s", v.ShardKeyFieldType, k))
 			}
