@@ -2,6 +2,8 @@ package websocket
 
 import (
 	"context"
+	"runtime/debug"
+
 	xconfig "github.com/75912001/xlib/config"
 	xerror "github.com/75912001/xlib/error"
 	xlog "github.com/75912001/xlib/log"
@@ -10,7 +12,6 @@ import (
 	xruntime "github.com/75912001/xlib/runtime"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
-	"runtime/debug"
 )
 
 // Client 客户端
@@ -38,20 +39,20 @@ func (p *Client) Connect(ctx context.Context, opts ...*ConnectOptions) error {
 	if err != nil {
 		return errors.WithMessagef(err, "dial %v %v", opt, xruntime.Location())
 	}
-	//defer conn.Close()
+	// defer conn.Close()
 
 	// 发送消息
-	//err = conn.WriteMessage(websocket.TextMessage, []byte("Hello, WebSocket!"))
-	//if err != nil {
+	// err = conn.WriteMessage(websocket.TextMessage, []byte("Hello, WebSocket!"))
+	// if err != nil {
 	//	log.Fatal("发送消息失败:", err)
-	//}
+	// }
 
 	// 读取响应
-	//_, message, err := conn.ReadMessage()
-	//if err != nil {
+	// _, message, err := conn.ReadMessage()
+	// if err != nil {
 	//	log.Fatal("读取消息失败:", err)
-	//}
-	//log.Printf("收到响应: %s", message)
+	// }
+	// log.Printf("收到响应: %s", message)
 
 	remote := NewRemote(conn, make(chan any, *opt.sendChanCapacity))
 	p.IRemote = remote
@@ -86,14 +87,14 @@ func (p *Client) Connect(ctx context.Context, opts ...*ConnectOptions) error {
 			if err != nil {
 				xlog.PrintfErr("read message fail. err:%v %v", err, debug.Stack())
 				if remote.GetDisconnectReason() == xnetcommon.DisconnectReasonUnknown { // 未设置,就设置为客户端主动断开
-					remote.SetDisconnectReason(xnetcommon.DisconnectReasonClientShutdown)
+					remote.SetDisconnectReason(xnetcommon.DisconnectReasonPeerShutdown)
 				}
 				break
 			}
 			if messageType != websocket.BinaryMessage {
 				xlog.PrintfErr("read message fail. err:%v %v", xerror.NotSupport, messageType)
 				if remote.GetDisconnectReason() == xnetcommon.DisconnectReasonUnknown { // 未设置,就设置为客户端主动断开
-					remote.SetDisconnectReason(xnetcommon.DisconnectReasonClientShutdown)
+					remote.SetDisconnectReason(xnetcommon.DisconnectReasonPeerShutdown)
 				}
 				break
 			}

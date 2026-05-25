@@ -3,6 +3,11 @@ package websocket
 import (
 	"context"
 	"errors"
+	"log"
+	"net/http"
+	"runtime/debug"
+	"time"
+
 	xconfig "github.com/75912001/xlib/config"
 	xcontrol "github.com/75912001/xlib/control"
 	xerror "github.com/75912001/xlib/error"
@@ -12,10 +17,6 @@ import (
 	xruntime "github.com/75912001/xlib/runtime"
 	"github.com/gorilla/websocket"
 	pkgerrors "github.com/pkg/errors"
-	"log"
-	"net/http"
-	"runtime/debug"
-	"time"
 )
 
 // Server 服务端
@@ -138,14 +139,14 @@ func (p *Server) handleWebSocket(w http.ResponseWriter, req *http.Request) {
 		if err != nil {
 			xlog.PrintfErr("read message fail. err:%v %v", err, debug.Stack())
 			if remote.GetDisconnectReason() == xnetcommon.DisconnectReasonUnknown { // 未设置,就设置为客户端主动断开
-				remote.SetDisconnectReason(xnetcommon.DisconnectReasonClientShutdown)
+				remote.SetDisconnectReason(xnetcommon.DisconnectReasonPeerShutdown)
 			}
 			break
 		}
 		if messageType != websocket.BinaryMessage {
 			xlog.PrintfErr("read message fail. err:%v %v", xerror.NotSupport, messageType)
 			if remote.GetDisconnectReason() == xnetcommon.DisconnectReasonUnknown { // 未设置,就设置为客户端主动断开
-				remote.SetDisconnectReason(xnetcommon.DisconnectReasonClientShutdown)
+				remote.SetDisconnectReason(xnetcommon.DisconnectReasonPeerShutdown)
 			}
 			break
 		}

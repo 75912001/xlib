@@ -1,6 +1,8 @@
 package kcp
 
 import (
+	"runtime/debug"
+
 	xconfig "github.com/75912001/xlib/config"
 	xcontrol "github.com/75912001/xlib/control"
 	xerror "github.com/75912001/xlib/error"
@@ -9,13 +11,12 @@ import (
 	xpacket "github.com/75912001/xlib/packet"
 	xutil "github.com/75912001/xlib/util"
 	"github.com/pkg/errors"
-	"runtime/debug"
 )
 
 // 接收数据-长度在前
 func (p *Remote) onRecvLengthFirst(iOut xcontrol.IOut, handler xnetcommon.IHandler) {
-	defer func() { //断开链接
-		//当 Conn 关闭, 该函数会引发 panic
+	defer func() { // 断开链接
+		// 当 Conn 关闭, 该函数会引发 panic
 		if r := recover(); r != nil {
 			xlog.PrintErr(xerror.GoroutinePanic, p, r, debug.Stack())
 		}
@@ -43,7 +44,7 @@ func (p *Remote) onRecvLengthFirst(iOut xcontrol.IOut, handler xnetcommon.IHandl
 		if nil != err {
 			xlog.PrintfInfo("remote:%p err:%v", p, err)
 			if p.GetDisconnectReason() == xnetcommon.DisconnectReasonUnknown { // 未设置,就设置为客户端主动断开
-				p.SetDisconnectReason(xnetcommon.DisconnectReasonClientShutdown)
+				p.SetDisconnectReason(xnetcommon.DisconnectReasonPeerShutdown)
 			}
 			return
 		}
@@ -58,7 +59,7 @@ func (p *Remote) onRecvLengthFirst(iOut xcontrol.IOut, handler xnetcommon.IHandl
 			packetAllLength := lengthSize + packetLength
 			if err = handler.OnCheckPacketLength(packetAllLength); err != nil {
 				if errors.Is(err, xerror.LengthNotEnough) { // 数据不够,继续读
-					//xlog.PrintfErr("remote:%p err:%v", p, err)
+					// xlog.PrintfErr("remote:%p err:%v", p, err)
 					goto LoopRead
 				} else {
 					xlog.PrintfErr("remote:%p err:%v", p, err)
@@ -68,7 +69,7 @@ func (p *Remote) onRecvLengthFirst(iOut xcontrol.IOut, handler xnetcommon.IHandl
 			if readIndex < int(packetAllLength) { // 不够一个完整的数据包,继续读
 				goto LoopRead
 			}
-			//完整的数据包
+			// 完整的数据包
 			if err = handler.OnCheckPacketLimit(p); err != nil {
 				xlog.PrintfErr("remote:%p buf:%v err:%v", p, buf, err)
 			} else {
@@ -102,7 +103,7 @@ func (p *Remote) onRecvLengthFirst(iOut xcontrol.IOut, handler xnetcommon.IHandl
 
 // 接收数据-消息ID在前
 func (p *Remote) onRecvMessageIDFirst(iOut xcontrol.IOut, handler xnetcommon.IHandler) {
-	defer func() { //断开链接
+	defer func() { // 断开链接
 		// 当 Conn 关闭, 该函数会引发 panic
 		if r := recover(); r != nil {
 			xlog.PrintErr(xerror.GoroutinePanic, p, r, debug.Stack())
@@ -136,14 +137,14 @@ func (p *Remote) onRecvMessageIDFirst(iOut xcontrol.IOut, handler xnetcommon.IHa
 		if err != nil {
 			xlog.PrintfInfo("remote:%p err:%v", p, err)
 			if p.GetDisconnectReason() == xnetcommon.DisconnectReasonUnknown { // 未设置,就设置为客户端主动断开
-				p.SetDisconnectReason(xnetcommon.DisconnectReasonClientShutdown)
+				p.SetDisconnectReason(xnetcommon.DisconnectReasonPeerShutdown)
 			}
 			return
 		}
 		readIndex += readNum
 		for {
 			if readIndex < int(msgIDSize) { // 数据不够,继续读
-				//xlog.PrintfErr("remote:%p err:%v", p, xerror.LengthNotEnough)
+				// xlog.PrintfErr("remote:%p err:%v", p, xerror.LengthNotEnough)
 				goto LoopRead
 			}
 			var msgID uint32
@@ -159,7 +160,7 @@ func (p *Remote) onRecvMessageIDFirst(iOut xcontrol.IOut, handler xnetcommon.IHa
 				return
 			}
 			if readIndex < int(msgIDSize+lengthSize) { // 数据不够,继续读
-				//xlog.PrintfErr("remote:%p err:%v", p, xerror.LengthNotEnough)
+				// xlog.PrintfErr("remote:%p err:%v", p, xerror.LengthNotEnough)
 				goto LoopRead
 			}
 			var length uint32
@@ -172,7 +173,7 @@ func (p *Remote) onRecvMessageIDFirst(iOut xcontrol.IOut, handler xnetcommon.IHa
 			packetAllLength := msgIDSize + lengthSize + length
 			if err = handler.OnCheckPacketLength(packetAllLength); err != nil {
 				if errors.Is(err, xerror.LengthNotEnough) { // 数据不够,继续读
-					//xlog.PrintfErr("remote:%p err:%v", p, err)
+					// xlog.PrintfErr("remote:%p err:%v", p, err)
 					goto LoopRead
 				} else {
 					xlog.PrintfErr("remote:%p err:%v", p, err)
