@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 	"os"
+	"time"
 )
 
 var GConfigMgr = NewMgr()
@@ -275,4 +276,43 @@ func (p *Mgr) GetCustomBool(key string, defaultValue ...bool) bool {
 	}
 
 	return dv
+}
+
+// GetCustomDuration 获取 time.Duration 类型的配置值，支持 "3s"、"1m" 等 Go duration 字符串。
+func (p *Mgr) GetCustomDuration(key string, defaultValue ...time.Duration) time.Duration {
+	var dv time.Duration
+	if len(defaultValue) == 0 {
+		dv = 0
+	} else {
+		dv = defaultValue[0]
+	}
+	if p.Custom == nil {
+		return dv
+	}
+
+	val, exists := p.Custom[key]
+	if !exists {
+		return dv
+	}
+
+	switch v := val.(type) {
+	case time.Duration:
+		return v
+	case string:
+		duration, err := time.ParseDuration(v)
+		if err != nil {
+			return dv
+		}
+		return duration
+	case int:
+		return time.Duration(v)
+	case int64:
+		return time.Duration(v)
+	case uint64:
+		return time.Duration(v)
+	case float64:
+		return time.Duration(v)
+	default:
+		return dv
+	}
 }
