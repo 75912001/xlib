@@ -1,6 +1,7 @@
 package server
 
 import (
+	xconfig "github.com/75912001/xlib/config"
 	xcontrol "github.com/75912001/xlib/control"
 	xerror "github.com/75912001/xlib/error"
 	xetcd "github.com/75912001/xlib/etcd"
@@ -87,13 +88,13 @@ func mergeOptions(opts ...*Options) *Options {
 
 // 配置
 func configure(opts *Options) error {
-	if opts.TCPHandler == nil && opts.KCPHandler == nil && opts.WebsocketHandler == nil {
-		return errors.WithMessagef(xerror.Param, "tcpHandler and kcpHandler and websocketHandler are nil. %v", xruntime.Location())
+	if opts.TCPHandler == nil && opts.KCPHandler == nil && opts.WebsocketHandler == nil && !xconfig.GConfigMgr.Grpc.IsEnabled() {
+		return errors.WithMessagef(xerror.Param, "tcpHandler and kcpHandler and websocketHandler and grpc are nil. %v", xruntime.Location())
 	}
 	if opts.LogCallback == nil {
 		return errors.WithMessagef(xerror.Param, "logCallback is nil. %v", xruntime.Location())
 	}
-	if opts.HeaderStrategy == nil {
+	if opts.HeaderStrategy == nil && (opts.TCPHandler != nil || opts.KCPHandler != nil || opts.WebsocketHandler != nil) {
 		return errors.WithMessagef(xerror.Param, "headerStrategy is nil. %v", xruntime.Location())
 	}
 	return nil
