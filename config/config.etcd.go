@@ -1,6 +1,8 @@
 package config
 
 import (
+	"time"
+
 	xerror "github.com/75912001/xlib/error"
 	xetcdconstants "github.com/75912001/xlib/etcd/constants"
 	xruntime "github.com/75912001/xlib/runtime"
@@ -9,7 +11,8 @@ import (
 
 type Etcd struct {
 	Endpoints []string `yaml:"endpoints"` // etcd地址
-	TTL       *int64   `yaml:"ttl"`       // ttl 秒		[default]: etcd.TtlSecondDefault 秒, e.g.:系统每10秒续约一次,该参数至少为11秒
+	// YAML 须为 Go duration 字面量,如 100ms, 1s
+	TTL *time.Duration `yaml:"ttl"` // ttl [default]: xetcdconstants.TtlSecondDefault, e.g.:系统每10秒续约一次,该参数至少为11秒
 }
 
 func (p *Etcd) Configure() error {

@@ -1,13 +1,14 @@
 package config
 
 import (
-	xtimerconstants "github.com/75912001/xlib/timer/constants"
 	"time"
+
+	xtimerconstants "github.com/75912001/xlib/timer/constants"
 )
 
 type Timer struct {
 	// 秒级定时器扫描间隔 [default]: timer.ScanSecondDurationDefault
-	// YAML 须为 Go duration 字面量,如 100ms, 1s 不可写裸整数纳秒(yaml 无法解码为 Duration)
+	// YAML 须为 Go duration 字面量,如 100ms, 1s
 	ScanSecondDuration *time.Duration `yaml:"scanSecondDuration"`
 	// 毫秒级定时器扫描间隔 [default]: timer.ScanMillisecondDurationDefault
 	ScanMillisecondDuration *time.Duration `yaml:"scanMillisecondDuration"`
