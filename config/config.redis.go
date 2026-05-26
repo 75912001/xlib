@@ -13,11 +13,11 @@ type Redis struct {
 	Addrs    []string `yaml:"addrs"`    // 地址
 	Password *string  `yaml:"password"` // 密码		[default]:"123456"
 	// YAML 须为 Go duration 字面量,如 100ms, 1s
-	DialTimeout *time.Duration `yaml:"dialTimeout"` // 连接超时时间	[default]: 3s
+	DialTimeoutDuration *time.Duration `yaml:"dialTimeoutDuration"` // 连接超时时间	[default]: 3s
 	// YAML 须为 Go duration 字面量,如 100ms, 1s
-	ReadTimeout *time.Duration `yaml:"readTimeout"` // 读超时时间	[default]: 3s
+	ReadTimeoutDuration *time.Duration `yaml:"readTimeoutDuration"` // 读超时时间	[default]: 3s
 	// YAML 须为 Go duration 字面量,如 100ms, 1s
-	WriteTimeout *time.Duration `yaml:"writeTimeout"` // 写超时时间	[default]: 3s
+	WriteTimeoutDuration *time.Duration `yaml:"writeTimeoutDuration"` // 写超时时间	[default]: 3s
 }
 
 func (p *Redis) Configure() error {
@@ -32,17 +32,17 @@ func (p *Redis) Configure() error {
 		defaultValue := "123456"
 		p.Password = &defaultValue
 	}
-	if p.DialTimeout == nil {
+	if p.DialTimeoutDuration == nil {
 		defaultValue := time.Second * 3
-		p.DialTimeout = &defaultValue
+		p.DialTimeoutDuration = &defaultValue
 	}
-	if p.ReadTimeout == nil {
+	if p.ReadTimeoutDuration == nil {
 		defaultValue := time.Second * 3
-		p.ReadTimeout = &defaultValue
+		p.ReadTimeoutDuration = &defaultValue
 	}
-	if p.WriteTimeout == nil {
+	if p.WriteTimeoutDuration == nil {
 		defaultValue := time.Second * 3
-		p.WriteTimeout = &defaultValue
+		p.WriteTimeoutDuration = &defaultValue
 	}
 	return nil
 }

@@ -12,16 +12,16 @@ import (
 type Etcd struct {
 	Endpoints []string `yaml:"endpoints"` // etcd地址
 	// YAML 须为 Go duration 字面量,如 100ms, 1s
-	TTL *time.Duration `yaml:"ttl"` // ttl [default]: xetcdconstants.TtlSecondDefault, e.g.:系统每10秒续约一次,该参数至少为11秒
+	TTLDuration *time.Duration `yaml:"ttlDuration"` // ttlDuration [default]: xetcdconstants.TtlSecondDefault, e.g.:系统每10秒续约一次,该参数至少为11秒
 }
 
 func (p *Etcd) Configure() error {
 	if len(p.Endpoints) == 0 {
 		return errors.WithMessagef(xerror.Config, "endpoints is empty. %v", xruntime.Location())
 	}
-	if p.TTL == nil {
-		defaultValue := xetcdconstants.TtlSecondDefault
-		p.TTL = &defaultValue
+	if p.TTLDuration == nil {
+		defaultValue := xetcdconstants.TtlDurationDefault
+		p.TTLDuration = &defaultValue
 	}
 	return nil
 }

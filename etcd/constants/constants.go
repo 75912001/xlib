@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-const TtlSecondDefault = 33 * time.Second // etcd 默认 TTL 时间
+const TtlDurationDefault = 33 * time.Second // etcd 默认 TTL 时间
 
 const WatchMsgTypeServer string = "server"       // etcd watch 消息类型-服务
 const WatchMsgTypeCommand string = "command"     // etcd watch 消息类型-命令
