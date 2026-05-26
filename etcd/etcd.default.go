@@ -2,15 +2,16 @@ package etcd
 
 import (
 	"context"
+	"runtime/debug"
+	"sync"
+	"time"
+
 	xcontrol "github.com/75912001/xlib/control"
 	xerror "github.com/75912001/xlib/error"
 	xlog "github.com/75912001/xlib/log"
 	xruntime "github.com/75912001/xlib/runtime"
 	"github.com/pkg/errors"
 	etcdclientv3 "go.etcd.io/etcd/client/v3"
-	"runtime/debug"
-	"sync"
-	"time"
 )
 
 type Etcd struct {
@@ -57,7 +58,7 @@ func (p *Etcd) Start(ctx context.Context, value string) error {
 	// 申请一个lease 租约
 	p.lease = etcdclientv3.NewLease(p.client)
 	// 申请一个ttl秒的租约
-	p.leaseGrantResponse, err = p.lease.Grant(context.TODO(), *p.options.ttl)
+	p.leaseGrantResponse, err = p.lease.Grant(context.TODO(), int64(*p.options.ttlDuration/time.Second))
 	if err != nil {
 		return errors.WithMessagef(err, "etcd new lease err. endpoints:%v %v", p.options.endpoints, xruntime.Location())
 	}
@@ -177,7 +178,7 @@ func (p *Etcd) KeepAlive(ctx context.Context) error {
 				xlog.PrintInfo(xerror.GoroutineDone)
 				return
 			case leaseKeepAliveResponse, ok := <-p.leaseKeepAliveResponseChannel:
-				//xlog.PrintInfo(leaseKeepAliveResponse, ok)
+				// xlog.PrintInfo(leaseKeepAliveResponse, ok)
 				if leaseKeepAliveResponse != nil {
 					continue
 				}
@@ -229,13 +230,13 @@ func (p *Etcd) PutWithLease(key string, value string) (*etcdclientv3.PutResponse
 }
 
 // Put 将一个键值对放入etcd中 [不带租约ttl]
-//func (p *Etcd) Put(key string, value string) (*etcdclientv3.PutResponse, error) {
+// func (p *Etcd) Put(key string, value string) (*etcdclientv3.PutResponse, error) {
 //	putResponse, err := p.kv.Put(context.TODO(), key, value)
 //	if err != nil {
 //		return nil, errors.WithMessage(err, xruntime.Location())
 //	}
 //	return putResponse, nil
-//}
+// }
 
 // DelWithPrefix 删除键值 匹配的键值
 func (p *Etcd) DelWithPrefix(keyPrefix string) (*etcdclientv3.DeleteResponse, error) {
@@ -247,17 +248,17 @@ func (p *Etcd) DelWithPrefix(keyPrefix string) (*etcdclientv3.DeleteResponse, er
 }
 
 //
-//// Del 删除键值
-//func (p *Mgr) Del(key string) (*clientv3.DeleteResponse, error) {
+// // Del 删除键值
+// func (p *Mgr) Del(key string) (*clientv3.DeleteResponse, error) {
 //	deleteResponse, err := p.kv.Delete(context.TODO(), key)
 //	if err != nil {
 //		return nil, errors.WithMessage(err, xrutil.GetCodeLocation(1).String())
 //	}
 //	return deleteResponse, nil
-//}
+// }
 //
-//// DelRange 按选项删除范围内的键值
-//func (p *Mgr) DelRange(startKeyPrefix string, endKeyPrefix string) (*clientv3.DeleteResponse, error) {
+// // DelRange 按选项删除范围内的键值
+// func (p *Mgr) DelRange(startKeyPrefix string, endKeyPrefix string) (*clientv3.DeleteResponse, error) {
 //	opts := []clientv3.OpOption{
 //		clientv3.WithPrefix(),
 //		clientv3.WithFromKey(),
@@ -268,7 +269,7 @@ func (p *Etcd) DelWithPrefix(keyPrefix string) (*etcdclientv3.DeleteResponse, er
 //		return nil, errors.WithMessage(err, xrutil.GetCodeLocation(1).String())
 //	}
 //	return deleteResponse, nil
-//}
+// }
 
 // WatchPrefix 监视以key为前缀的所有 key value
 func (p *Etcd) WatchPrefix(key string) etcdclientv3.WatchChan {
@@ -276,14 +277,14 @@ func (p *Etcd) WatchPrefix(key string) etcdclientv3.WatchChan {
 }
 
 //
-//// Get 检索键
-//func (p *Mgr) Get(key string) (*clientv3.GetResponse, error) {
+// // Get 检索键
+// func (p *Mgr) Get(key string) (*clientv3.GetResponse, error) {
 //	getResponse, err := p.kv.Get(context.TODO(), key)
 //	if err != nil {
 //		return nil, errors.WithMessage(err, xrutil.GetCodeLocation(1).String())
 //	}
 //	return getResponse, nil
-//}
+// }
 
 // GetPrefix 查找以key为前缀的所有 key value
 func (p *Etcd) GetPrefix(key string) (*etcdclientv3.GetResponse, error) {
