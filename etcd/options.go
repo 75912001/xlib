@@ -1,17 +1,18 @@
 package etcd
 
 import (
+	"time"
+
 	xcontrol "github.com/75912001/xlib/control"
 	xerror "github.com/75912001/xlib/error"
 	xetcdconstants "github.com/75912001/xlib/etcd/constants"
 	xruntime "github.com/75912001/xlib/runtime"
 	"github.com/pkg/errors"
-	"time"
 )
 
 type Options struct {
 	endpoints            []string           // 地址
-	ttl                  *int64             // Time To Live, etcd内部会按照 ttl/3 的时间(最小1秒),保持连接
+	ttlDuration          *time.Duration     // Time To Live, etcd内部会按照 ttl/3 的时间(最小1秒),保持连接
 	grantLeaseMaxRetries *int               // 授权租约 最大 重试次数 [default: grantLeaseMaxRetriesDefault]
 	dialTimeout          *time.Duration     // dialTimeout is the timeout for failing to establish a connection. [default: dialTimeoutDefault]
 	iOut                 xcontrol.IOut      // 传出 [nil: 则不传出事件] // 当设置了 watchKeyPrefix 时, 该接口用于传出事件,与 watchKeyPrefix 同时生效
@@ -48,8 +49,8 @@ func (p *Options) WithEndpoints(endpoints []string) *Options {
 	return p
 }
 
-func (p *Options) WithTTL(ttl int64) *Options {
-	p.ttl = &ttl
+func (p *Options) WithTTL(ttl time.Duration) *Options {
+	p.ttlDuration = &ttl
 	return p
 }
 
@@ -94,8 +95,8 @@ func MergeOptions(opts ...*Options) *Options {
 		if len(opt.endpoints) != 0 {
 			no.WithEndpoints(opt.endpoints)
 		}
-		if opt.ttl != nil {
-			no.WithTTL(*opt.ttl)
+		if opt.ttlDuration != nil {
+			no.WithTTL(*opt.ttlDuration)
 		}
 		if opt.grantLeaseMaxRetries != nil {
 			no.WithGrantLeaseMaxRetries(*opt.grantLeaseMaxRetries)
@@ -130,7 +131,7 @@ func configure(opts *Options) error {
 	if len(opts.endpoints) == 0 {
 		return errors.WithMessagef(xerror.Param, "endpoints is empty. %v", xruntime.Location())
 	}
-	if opts.ttl == nil {
+	if opts.ttlDuration == nil {
 		return errors.WithMessagef(xerror.Param, "ttl is nil. %v", xruntime.Location())
 	}
 	if opts.grantLeaseMaxRetries == nil {

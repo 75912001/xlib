@@ -4,6 +4,13 @@ import (
 	"context"
 	"crypto/sha1"
 	"fmt"
+	"os"
+	"os/signal"
+	"runtime"
+	"sync"
+	"syscall"
+	"time"
+
 	xactor "github.com/75912001/xlib/actor"
 	xconfig "github.com/75912001/xlib/config"
 	xcontrol "github.com/75912001/xlib/control"
@@ -26,12 +33,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/xdg-go/pbkdf2"
 	"github.com/xtaci/kcp-go/v5"
-	"os"
-	"os/signal"
-	"runtime"
-	"sync"
-	"syscall"
-	"time"
 )
 
 type Server struct {
@@ -145,7 +146,7 @@ func (p *Server) PreStart(ctx context.Context, opts ...*Options) error {
 }
 
 func (p *Server) Start(ctx context.Context) (err error) {
-	////////////////////////////////////////////////////////////
+	// //////////////////////////////////////////////////////////
 	// grpc 服务
 	if xconfig.GConfigMgr.Grpc.IsEnabled() {
 		err = p.GRPCServer.Start(*xconfig.GConfigMgr.Grpc.ListenAddr)
@@ -153,7 +154,7 @@ func (p *Server) Start(ctx context.Context) (err error) {
 			return errors.WithMessagef(err, "grpc server start err. %v", xruntime.Location())
 		}
 	}
-	////////////////////////////////////////////////////////////
+	// //////////////////////////////////////////////////////////
 	// 网络服务
 	for _, element := range xconfig.GConfigMgr.Net {
 		switch *element.Type {
@@ -207,7 +208,7 @@ func (p *Server) Start(ctx context.Context) (err error) {
 	}
 
 	stateTimerPrint(xtimer.GTimer, xlog.GLog, p.GetActor())
-	////////////////////////////////////////////////////////////
+	// //////////////////////////////////////////////////////////
 	// etcd
 	etcdKey := xetcd.GenKey(*xconfig.GConfigMgr.Base.ProjectName,
 		xetcdconstants.WatchMsgTypeServer,
@@ -218,7 +219,7 @@ func (p *Server) Start(ctx context.Context) (err error) {
 	defaultEtcd := xetcd.NewEtcd(
 		xetcd.NewOptions().
 			WithEndpoints(xconfig.GConfigMgr.Etcd.Endpoints).
-			WithTTL(*xconfig.GConfigMgr.Etcd.TTL).
+			WithTTL(*xconfig.GConfigMgr.Etcd.TTLDuration).
 			WithWatchKeyPrefix(xetcd.GenPrefixKey(*xconfig.GConfigMgr.Base.ProjectName)).
 			WithKey(etcdKey).
 			WithIOut(p.GetActor()),
@@ -238,7 +239,7 @@ func (p *Server) Start(ctx context.Context) (err error) {
 		time.Now().Unix()+ReportIntervalSecondDefault,
 		p.GetActor(),
 	)
-	////////////////////////////////////////////////////////////
+	// //////////////////////////////////////////////////////////
 	runtime.GC()
 	return nil
 }
