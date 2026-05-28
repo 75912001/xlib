@@ -54,14 +54,13 @@ func (p *Server) processEvent(value any) eventResult {
 		}
 	case *xcontrol.Event:
 		if event.ISwitch.IsOn() {
-			_ = event.ICallBack.Execute()
+			err = event.ICallBack.Execute()
 		}
 	default:
 		err = xerror.NotSupport
-		xlog.GLog.Errorf("non-existent event:%v %v", value, event)
 	}
 	if err != nil {
-		xlog.GLog.Errorf("Handle event:%v error:%v", value, err)
+		xlog.GLog.Warnf("Handle event:%v error:%v", value, err)
 	}
 	return eventResult{
 		err: err,
