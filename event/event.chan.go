@@ -6,6 +6,9 @@ package event
 
 import (
 	"context"
+	"runtime/debug"
+	"time"
+
 	xconfigcommon "github.com/75912001/xlib/config/constants"
 	xcontrol "github.com/75912001/xlib/control"
 	xerror "github.com/75912001/xlib/error"
@@ -13,8 +16,6 @@ import (
 	xlog "github.com/75912001/xlib/log"
 	xruntime "github.com/75912001/xlib/runtime"
 	xutil "github.com/75912001/xlib/util"
-	"runtime/debug"
-	"time"
 )
 
 // ChanManager 事件管理器
@@ -102,7 +103,7 @@ func (p *ChanManager) worker() {
 		case event := <-p.eventChan:
 			if err := p.onFunction(event); err != nil {
 				// 处理错误，可以选择记录日志或采取其他措施
-				xlog.PrintErr(err)
+				xlog.GLog.Errorf("event:%+v err:%v", event, err)
 			}
 		}
 	}

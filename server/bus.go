@@ -1,6 +1,8 @@
 package server
 
 import (
+	"time"
+
 	xactor "github.com/75912001/xlib/actor"
 	xcontrol "github.com/75912001/xlib/control"
 	xerror "github.com/75912001/xlib/error"
@@ -8,7 +10,6 @@ import (
 	xnetcommon "github.com/75912001/xlib/net/common"
 	xruntime "github.com/75912001/xlib/runtime"
 	"github.com/pkg/errors"
-	"time"
 )
 
 // 性能监控阈值
@@ -60,7 +61,7 @@ func (p *Server) processEvent(value any) eventResult {
 		err = xerror.NotSupport
 	}
 	if err != nil {
-		xlog.GLog.Warnf("Handle event:%v error:%v", value, err)
+		xlog.GLog.Errorf("Handle event:%v error:%v", value, err)
 	}
 	return eventResult{
 		err: err,
