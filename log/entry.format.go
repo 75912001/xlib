@@ -96,6 +96,7 @@ func formatLogData(p *entry) {
 	// 日志消息(与主缓冲合并,避免 getMessage 二次缓冲与 String 分配)
 	buf.WriteByte(' ')
 	appendLogMessage(buf, p)
+	buf.WriteByte('\n')
 
 	p.outBytes = append(p.outBytes[:0], buf.Bytes()...)
 }
