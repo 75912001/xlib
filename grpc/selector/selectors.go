@@ -2,6 +2,7 @@ package selector
 
 import (
 	"context"
+
 	xerror "github.com/75912001/xlib/error"
 	xgrpcproto "github.com/75912001/xlib/grpc/proto"
 	xgrpcprotoregistry "github.com/75912001/xlib/grpc/proto/registry"
@@ -94,7 +95,7 @@ func Init() {
 func (p *selectors[K]) Sel(ctx context.Context, k K, method string) (*grpc.ClientConn, error) {
 	policy, ok := p.MapMgr.Find(method)
 	if !ok {
-		return nil, errors.WithMessagef(xerror.NotExist, "selector for method %s not exist", method)
+		return nil, errors.WithMessagef(xerror.NotFound, "selector for method %s", method)
 	}
 	return policy.Select(ctx, k, method)
 }

@@ -2,6 +2,8 @@ package selector
 
 import (
 	"context"
+	"strconv"
+
 	xerror "github.com/75912001/xlib/error"
 	xgrpcresolve "github.com/75912001/xlib/grpc/resolve"
 	"github.com/75912001/xlib/grpc/util"
@@ -10,7 +12,6 @@ import (
 	xruntime "github.com/75912001/xlib/runtime"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
-	"strconv"
 )
 
 type HashRing[K util.IKey] struct {
@@ -51,7 +52,7 @@ func (p *HashRing[K]) Select(ctx context.Context, key K, method string) (*grpc.C
 	}
 	clientConn, err := xgrpcresolve.GetClientConnByHashRing(m.PackageName, m.ServiceName, strKey)
 	if err != nil {
-		return nil, errors.WithMessagef(xerror.NotExist, "err: %v", err)
+		return nil, errors.WithMessagef(xerror.NotFound, "err: %v", err)
 	}
 	return clientConn.GetClientConn(), nil
 }

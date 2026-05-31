@@ -203,7 +203,7 @@ func (p *Server) Start(ctx context.Context) (err error) {
 				return errors.WithMessagef(err, "websocket server start err. %v", xruntime.Location())
 			}
 		default:
-			return errors.WithMessagef(xerror.NotImplemented, "server net type not implemented. %v", xruntime.Location())
+			return errors.WithMessagef(xerror.Unimplemented, "server net type. %v", xruntime.Location())
 		}
 	}
 

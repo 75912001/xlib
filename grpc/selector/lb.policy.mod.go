@@ -2,6 +2,8 @@ package selector
 
 import (
 	"context"
+	"hash/fnv"
+
 	xerror "github.com/75912001/xlib/error"
 	xgrpcresolve "github.com/75912001/xlib/grpc/resolve"
 	"github.com/75912001/xlib/grpc/util"
@@ -11,7 +13,6 @@ import (
 	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
-	"hash/fnv"
 )
 
 type Mod[K util.IKey] struct {
@@ -54,7 +55,7 @@ func (p *Mod[K]) Select(ctx context.Context, key K, method string) (*grpc.Client
 	// 如果缓存中不存在连接，则需要从服务注册中心获取 gRPC 客户端列表
 	clientConnSlice := xgrpcresolve.GetClientConn(packetServiceName)
 	if len(clientConnSlice) == 0 {
-		return nil, errors.WithMessage(xerror.NotExist, xruntime.Location())
+		return nil, errors.WithMessage(xerror.NotFound, xruntime.Location())
 	}
 	idx := 0
 	switch v := any(key).(type) {

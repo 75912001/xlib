@@ -27,7 +27,7 @@ func (p *Net) Configure() error {
 	if *p.Type != xnetcommon.ServerNetTypeNameTCP &&
 		*p.Type != xnetcommon.ServerNetTypeNameKCP &&
 		*p.Type != xnetcommon.ServerNetTypeNameWebSocket {
-		return errors.WithMessagef(xerror.NotImplemented, "serviceNet.type must be tcp || kcp || websocket. %v", xruntime.Location())
+		return errors.WithMessagef(xerror.Unimplemented, "serviceNet.type must be tcp || kcp || websocket. %v", xruntime.Location())
 	}
 	if p.ListenAddr == nil {
 		return errors.WithMessagef(xerror.Config, "serviceNet.listenAddr is empty.")

@@ -46,7 +46,7 @@ func GetClientConn(packetServiceName string) []xgrpcutil.IClientConn {
 func GetClientConnByHashRing(packageName string, serviceName string, shardKey string) (xgrpcutil.IClientConn, error) {
 	conn := gHashRingMgr.get(packageName, serviceName, shardKey)
 	if conn == nil {
-		return nil, errors.WithMessage(xerror.NotExist, xruntime.Location())
+		return nil, errors.WithMessage(xerror.NotFound, xruntime.Location())
 	}
 	return conn, nil
 }

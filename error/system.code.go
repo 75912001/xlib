@@ -2,59 +2,92 @@ package error
 
 // [系统错误码] lib/error/system 级别的错误码
 var (
-	Success            = NewError(0x0000).WithName("Success").WithDesc("success-成功")
+	Success            = NewError(0x0000).WithName("Success").WithDesc("success-成功/正常-请求已成功完成,没有发生错误")
 	Fail               = NewError(0x0001).WithName("Fail").WithDesc("fail-失败")
 	NotSupport         = NewError(0x0002).WithName("NotSupport").WithDesc("not-support-不支持")
-	Valid              = NewError(0x0010).WithName("Valid").WithDesc("valid-有效")
-	Invalid            = NewError(0x0011).WithName("Invalid").WithDesc("invalid-无效")
-	Available          = NewError(0x0020).WithName("Available").WithDesc("available-可用")
-	Unavailable        = NewError(0x0021).WithName("Unavailable").WithDesc("unavailable-不可用")
-	Exist              = NewError(0x0030).WithName("Exist").WithDesc("exist-存在")
-	NotExist           = NewError(0x0031).WithName("NotExist").WithDesc("notExist-不存在")
-	Legal              = NewError(0x0040).WithName("Legal").WithDesc("legal-合法")
-	Illegal            = NewError(0x0041).WithName("Illegal").WithDesc("illegal-非法")
-	Permitted          = NewError(0x0050).WithName("Permitted").WithDesc("permitted-允许的")
-	Prohibited         = NewError(0x0051).WithName("Prohibited").WithDesc("prohibited-禁止的")
-	Expect             = NewError(0x0060).WithName("Expect").WithDesc("expect-期望")
-	Unexpected         = NewError(0x0061).WithName("Unexpected").WithDesc("unexpected-不期望")
-	Enable             = NewError(0x0070).WithName("Enable").WithDesc("enable-启用")
-	Disable            = NewError(0x0071).WithName("Disable").WithDesc("disable-禁用")
-	Normal             = NewError(0x0080).WithName("Normal").WithDesc("normal-正常")
-	Abnormal           = NewError(0x0081).WithName("Abnormal").WithDesc("abnormal-异常")
-	NotTimeout         = NewError(0x0090).WithName("NotTimeout").WithDesc("not-timeout-未超时")
-	Timeout            = NewError(0x0091).WithName("Timeout").WithDesc("timeout-超时")
-	NotOutOfRange      = NewError(0x00a0).WithName("NotOutOfRange").WithDesc("not-out-of-range-未超出范围")
-	OutOfRange         = NewError(0x00a1).WithName("OutOfRange").WithDesc("out-of-range-超出范围")
-	NotConflict        = NewError(0x00b0).WithName("NotConflict").WithDesc("not-conflict-未冲突")
-	Conflict           = NewError(0x00b1).WithName("Conflict").WithDesc("conflict-冲突")
-	Matched            = NewError(0x00c0).WithName("Matched").WithDesc("matched-匹配")
-	Mismatch           = NewError(0x00c1).WithName("Mismatch").WithDesc("mismatch-不匹配")
-	Implemented        = NewError(0x00d0).WithName("Implemented").WithDesc("implemented-已实现")
-	NotImplemented     = NewError(0x00d1).WithName("NotImplemented").WithDesc("not-implemented-未实现")
-	Registered         = NewError(0x00e0).WithName("Registered").WithDesc("registered-已注册")
-	Unregistered       = NewError(0x00e1).WithName("Unregistered").WithDesc("unregistered-未注册")
-	Marshal            = NewError(0x00f0).WithName("Marshal").WithDesc("marshal-序列化")
-	Unmarshal          = NewError(0x00f1).WithName("Unmarshal").WithDesc("unmarshal-反序列化")
-	Level              = NewError(0x0100).WithName("Level").WithDesc("level-等级")
-	LevelNotEnough     = NewError(0x0101).WithName("LevelNotEnough").WithDesc("level-not-enough-等级不足")
-	NotDuplicate       = NewError(0x0110).WithName("NotDuplicate").WithDesc("not-duplicate-不重复")
-	Duplicate          = NewError(0x0111).WithName("Duplicate").WithDesc("duplicate-重复")
-	Idle               = NewError(0x0120).WithName("Idle").WithDesc("idle-空闲")
-	Busy               = NewError(0x0121).WithName("Busy").WithDesc("busy-繁忙")
-	AdequateResources  = NewError(0x0130).WithName("AdequateResources").WithDesc("adequate-resources-资源充足")
-	OutOfResources     = NewError(0x0131).WithName("OutOfResources").WithDesc("out-of-resources-资源不足")
-	ValidOperation     = NewError(0x0140).WithName("ValidOperation").WithDesc("valid-operation-有效操作")
-	InvalidOperation   = NewError(0x0141).WithName("InvalidOperation").WithDesc("invalid-operation-无效操作")
-	AdequateCondition  = NewError(0x0150).WithName("AdequateCondition").WithDesc("adequate-condition-条件充足")
-	IllConditioned     = NewError(0x0151).WithName("IllConditioned").WithDesc("ill-conditioned-条件不足")
-	PermissionGranted  = NewError(0x0160).WithName("PermissionGranted").WithDesc("permission-granted-有权限")
-	PermissionDenied   = NewError(0x0161).WithName("PermissionDenied").WithDesc("permission-denied-没有权限")
-	NotFrozen          = NewError(0x0170).WithName("NotFrozen").WithDesc("not-frozen-未冻结")
-	Frozen             = NewError(0x0171).WithName("Frozen").WithDesc("frozen-冻结")
-	Hit                = NewError(0x0180).WithName("Hit").WithDesc("hit-命中")
-	Miss               = NewError(0x0181).WithName("Miss").WithDesc("miss-未命中")
-	Length             = NewError(0x0190).WithName("Length").WithDesc("length-长度")
-	LengthNotEnough    = NewError(0x0191).WithName("LengthNotEnough").WithDesc("length-not-enough-数据长度不够,需要继续接收") // 数据长度不够,需要继续接收
+	Cancelled          = NewError(0x0003).WithName("Cancelled").WithDesc("cancelled-已取消-操作被主动取消,通常是由客户端或调用方触发")
+	InvalidArgument    = NewError(0x0004).WithName("InvalidArgument").WithDesc("invalid-argument-无效参数-客户端请求中包含了无效的数据或参数格式错误")
+	DeadlineExceeded   = NewError(0x0005).WithName("DeadlineExceeded").WithDesc("deadline-exceeded-请求超时/响应超时-操作在完成前达到了设定的截止时间")
+	NotFound           = NewError(0x0006).WithName("NotFound").WithDesc("not-found-未找到-请求的特定资源不存在")
+	AlreadyExists      = NewError(0x0007).WithName("AlreadyExists").WithDesc("already-exists-已存在-尝试创建的资源已经存在，引发冲突")
+	PermissionDenied   = NewError(0x0008).WithName("PermissionDenied").WithDesc("permission-denied-权限被拒绝/拒绝访问-客户端没有执行该特定操作的权限")
+	ResourceExhausted  = NewError(0x0009).WithName("ResourceExhausted").WithDesc("resource-exhausted-资源耗尽-资源配额不足,或请求频率超限")
+	FailedPrecondition = NewError(0x000A).WithName("FailedPrecondition").WithDesc("failed-precondition-前置条件失败-系统当前的状态不满足执行该操作的条件")
+	Aborted            = NewError(0x000B).WithName("Aborted").WithDesc("aborted-已中止-操作被并发冲突等原因中止")
+	OutOfRange         = NewError(0x000C).WithName("OutOfRange").WithDesc("out-of-range-超出范围-操作超出了有效的允许范围")
+	Unimplemented      = NewError(0x000D).WithName("Unimplemented").WithDesc("unimplemented-未实现-服务端尚未实现或不支持该方法/功能")
+	Internal           = NewError(0x000E).WithName("Internal").WithDesc("internal-内部错误-服务器底层出现了严重的不可预期的错误")
+	Unavailable        = NewError(0x000F).WithName("Unavailable").WithDesc("unavailable-服务不可用-服务当前无法处理请求")
+	DataLoss           = NewError(0x0010).WithName("DataLoss").WithDesc("data-loss-数据丢失-出现了不可恢复的数据损坏或严重的数据丢失")
+	Unauthenticated    = NewError(0x0011).WithName("Unauthenticated").WithDesc("unauthenticated-未认证/未经身份验证-请求缺少有效的身份验证凭证")
+
+	Available = NewError(0x0020).WithName("Available").WithDesc("available-可用")
+	Valid     = NewError(0x0021).WithName("Valid").WithDesc("valid-有效")
+	Invalid   = NewError(0x0022).WithName("Invalid").WithDesc("invalid-无效")
+
+	Legal   = NewError(0x0040).WithName("Legal").WithDesc("legal-合法")
+	Illegal = NewError(0x0041).WithName("Illegal").WithDesc("illegal-非法")
+
+	Permitted  = NewError(0x0050).WithName("Permitted").WithDesc("permitted-允许的")
+	Prohibited = NewError(0x0051).WithName("Prohibited").WithDesc("prohibited-禁止的")
+
+	Expect     = NewError(0x0060).WithName("Expect").WithDesc("expect-期望")
+	Unexpected = NewError(0x0061).WithName("Unexpected").WithDesc("unexpected-不期望")
+
+	Enable  = NewError(0x0070).WithName("Enable").WithDesc("enable-启用")
+	Disable = NewError(0x0071).WithName("Disable").WithDesc("disable-禁用")
+
+	Normal   = NewError(0x0080).WithName("Normal").WithDesc("normal-正常")
+	Abnormal = NewError(0x0081).WithName("Abnormal").WithDesc("abnormal-异常")
+
+	NotTimeout = NewError(0x0090).WithName("NotTimeout").WithDesc("not-timeout-未超时")
+	Timeout    = NewError(0x0091).WithName("Timeout").WithDesc("timeout-超时")
+
+	NotOutOfRange = NewError(0x00a0).WithName("NotOutOfRange").WithDesc("not-out-of-range-未超出范围")
+
+	NotConflict = NewError(0x00b0).WithName("NotConflict").WithDesc("not-conflict-未冲突")
+	Conflict    = NewError(0x00b1).WithName("Conflict").WithDesc("conflict-冲突")
+
+	Matched  = NewError(0x00c0).WithName("Matched").WithDesc("matched-匹配")
+	Mismatch = NewError(0x00c1).WithName("Mismatch").WithDesc("mismatch-不匹配")
+
+	Implemented = NewError(0x00d0).WithName("Implemented").WithDesc("implemented-已实现")
+
+	Registered   = NewError(0x00e0).WithName("Registered").WithDesc("registered-已注册")
+	Unregistered = NewError(0x00e1).WithName("Unregistered").WithDesc("unregistered-未注册")
+
+	Marshal   = NewError(0x00f0).WithName("Marshal").WithDesc("marshal-序列化")
+	Unmarshal = NewError(0x00f1).WithName("Unmarshal").WithDesc("unmarshal-反序列化")
+
+	Level          = NewError(0x0100).WithName("Level").WithDesc("level-等级")
+	LevelNotEnough = NewError(0x0101).WithName("LevelNotEnough").WithDesc("level-not-enough-等级不足")
+
+	NotDuplicate = NewError(0x0110).WithName("NotDuplicate").WithDesc("not-duplicate-不重复")
+	Duplicate    = NewError(0x0111).WithName("Duplicate").WithDesc("duplicate-重复")
+
+	Idle = NewError(0x0120).WithName("Idle").WithDesc("idle-空闲")
+	Busy = NewError(0x0121).WithName("Busy").WithDesc("busy-繁忙")
+
+	AdequateResources = NewError(0x0130).WithName("AdequateResources").WithDesc("adequate-resources-资源充足")
+	OutOfResources    = NewError(0x0131).WithName("OutOfResources").WithDesc("out-of-resources-资源不足")
+
+	ValidOperation   = NewError(0x0140).WithName("ValidOperation").WithDesc("valid-operation-有效操作")
+	InvalidOperation = NewError(0x0141).WithName("InvalidOperation").WithDesc("invalid-operation-无效操作")
+
+	AdequateCondition = NewError(0x0150).WithName("AdequateCondition").WithDesc("adequate-condition-条件充足")
+	IllConditioned    = NewError(0x0151).WithName("IllConditioned").WithDesc("ill-conditioned-条件不足")
+
+	PermissionGranted = NewError(0x0160).WithName("PermissionGranted").WithDesc("permission-granted-有权限")
+
+	NotFrozen = NewError(0x0170).WithName("NotFrozen").WithDesc("not-frozen-未冻结")
+	Frozen    = NewError(0x0171).WithName("Frozen").WithDesc("frozen-冻结")
+
+	Hit  = NewError(0x0180).WithName("Hit").WithDesc("hit-命中")
+	Miss = NewError(0x0181).WithName("Miss").WithDesc("miss-未命中")
+
+	Length          = NewError(0x0190).WithName("Length").WithDesc("length-长度")
+	LengthNotEnough = NewError(0x0191).WithName("LengthNotEnough").WithDesc("length-not-enough-数据长度不够,需要继续接收") // 数据长度不够,需要继续接收
+
 	Quantity           = NewError(0x01a0).WithName("Quantity").WithDesc("quantity-数量")
 	Retry              = NewError(0x01b0).WithName("Retry").WithDesc("retry-重试")
 	Link               = NewError(0x01c0).WithName("Link").WithDesc("link-链接")
@@ -96,6 +129,6 @@ var (
 	Receive   = NewError(0xf060).WithName("Receive").WithDesc("receive-接收")
 	Configure = NewError(0xf070).WithName("Configure").WithDesc("configure-给配置")
 
-	Unknown = NewError(0xffff).WithName("Unknown").WithDesc("unknown-未知")
+	Unknown = NewError(0xffff).WithName("Unknown").WithDesc("unknown-未知错误-发生了无法明确归类的服务器错误")
 	// 0xffff
 )

@@ -24,8 +24,8 @@ func NewMgr() *Mgr {
 //	重复会 panic
 func (p *Mgr) Register(messageID uint32, opts ...*options) {
 	if pb := p.Find(messageID); pb != nil {
-		xlog.PrintErr(xerror.Exist, "%v messageID:%#x %v", xruntime.Location(), messageID, messageID)
-		panic(errors.WithMessagef(xerror.Exist, "%v messageID:%#x %v",
+		xlog.PrintErr(xerror.AlreadyExists, "%v messageID:%#x %v", xruntime.Location(), messageID, messageID)
+		panic(errors.WithMessagef(xerror.AlreadyExists, "%v messageID:%#x %v",
 			xruntime.Location(), messageID, messageID))
 	}
 	opt := merge(opts...)
