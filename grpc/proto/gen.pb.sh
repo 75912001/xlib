@@ -29,9 +29,19 @@ fi
 OutputDir=./
 mkdir -p ${OutputDir}
 
+# 使用仓库内的 protobuf well-known types include 目录
+PROTO_INCLUDE="../../thirdparty"
+if [ ! -f "${PROTO_INCLUDE}/google/protobuf/descriptor.proto" ]; then
+    echo "错误: 找不到 ${PROTO_INCLUDE}/google/protobuf/descriptor.proto"
+    exit 1
+fi
+echo "使用 proto include 目录: ${PROTO_INCLUDE}"
+
 # 生成 protobuf 代码
 echo "正在生成 protobuf 代码..."
 protoc \
+    -I . \
+    -I "${PROTO_INCLUDE}" \
     --go_out=${OutputDir} \
     --go_opt=paths=source_relative \
     --go-grpc_out=${OutputDir} \
@@ -40,10 +50,10 @@ protoc \
 
 # 检查生成是否成功
 if [ $? -eq 0 ]; then
-    echo "✅ 代码生成成功！"
+    echo "代码生成成功"
     echo "生成的文件位于: ${OutputDir}"
 else
-    echo "❌ 代码生成失败"
+    echo "代码生成失败"
     exit 1
 fi
 
