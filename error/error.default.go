@@ -20,11 +20,11 @@ type Error struct {
 // NewError 创建错误码 [初始化程序的时候创建] 创建失败会 panic.
 func NewError(code uint32) *Error {
 	newObject := newError(code)
-	_, ok := errMap.Find(newObject.code)
+	_, ok := ErrMap.Find(newObject.code)
 	if ok { // 重复
 		panic(errors.WithStack(errors.Errorf("duplicate err, code:%v %#x", newObject.code, newObject.code)))
 	}
-	errMap.Add(code, struct{}{})
+	ErrMap.Add(code, struct{}{})
 	return newObject
 }
 
@@ -93,7 +93,7 @@ func (p *Error) ExtraError() error {
 }
 
 // 用来确保 错误码-唯一性
-var errMap = xmap.NewMapMgr[uint32, struct{}]()
+var ErrMap = xmap.NewMapMgr[uint32, struct{}]()
 
 func newError(code uint32) *Error {
 	return &Error{
