@@ -11,6 +11,19 @@ import (
 	"strconv"
 )
 
+func SelNoShard(ctx context.Context, method string) (context.Context, *grpc.ClientConn, error) {
+	opt := xgrpcprotoregistry.GetOptions(method)
+	switch opt.LoadBalancePolicy {
+	case xgrpcproto.LoadBalancePolicy_LoadBalancePolicy_First,
+		xgrpcproto.LoadBalancePolicy_LoadBalancePolicy_Random,
+		xgrpcproto.LoadBalancePolicy_LoadBalancePolicy_RoundRobin:
+		grpcClientConn, err := noShardSelector.Sel(ctx, 0, method)
+		return ctx, grpcClientConn, err
+	default:
+		return ctx, nil, errors.WithMessagef(xerror.NotSupport, "load balance type %s not support", opt.LoadBalancePolicy)
+	}
+}
+
 func Sel(ctx context.Context, method string, shardKeyValue any) (context.Context, *grpc.ClientConn, error) {
 	var err error
 	var grpcClientConn *grpc.ClientConn

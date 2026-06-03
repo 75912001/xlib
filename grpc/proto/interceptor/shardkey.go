@@ -14,10 +14,17 @@ import (
 
 func ShardKeyServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		opt := xgrpcprotoregistry.GetOptions(info.FullMethod)
+		switch opt.LoadBalancePolicy {
+		case xgrpcproto.LoadBalancePolicy_LoadBalancePolicy_First,
+			xgrpcproto.LoadBalancePolicy_LoadBalancePolicy_Random,
+			xgrpcproto.LoadBalancePolicy_LoadBalancePolicy_RoundRobin,
+			xgrpcproto.LoadBalancePolicy_LoadBalancePolicy_Direct:
+			return handler(ctx, req)
+		}
 		if md, ok := metadata.FromIncomingContext(ctx); ok { // 从 metadata 中获取 shareKey
 			if values := md.Get(xgrpcproto.ShardKeyFieldNameDefault); len(values) > 0 {
 				// 根据类型转换值
-				opt := xgrpcprotoregistry.GetOptions(info.FullMethod)
 				var value any
 
 				switch opt.ShardKeyFieldType {

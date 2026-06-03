@@ -14,6 +14,7 @@ enum LoadBalancePolicy {
     LoadBalancePolicy_RoundRobin = 3; // 轮询
     LoadBalancePolicy_Mod = 4; // 取模
     LoadBalancePolicy_RingHash = 5; // 环形哈希
+    LoadBalancePolicy_Direct = 6; // 直连
 }
 
 // 分片-类型

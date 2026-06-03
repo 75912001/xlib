@@ -116,6 +116,19 @@ func Init() {
 							}
 						}
 					}
+					switch newOpt.LoadBalancePolicy {
+					case xgrpcproto.LoadBalancePolicy_LoadBalancePolicy_First,
+						xgrpcproto.LoadBalancePolicy_LoadBalancePolicy_Random,
+						xgrpcproto.LoadBalancePolicy_LoadBalancePolicy_RoundRobin,
+						xgrpcproto.LoadBalancePolicy_LoadBalancePolicy_Direct:
+						newOpt.ShardKeyFieldType = xgrpcproto.ShardKeyFieldType_ShardKeyFieldType_Unspecified
+					case xgrpcproto.LoadBalancePolicy_LoadBalancePolicy_Mod, xgrpcproto.LoadBalancePolicy_LoadBalancePolicy_RingHash:
+						if newOpt.ShardKeyFieldType == xgrpcproto.ShardKeyFieldType_ShardKeyFieldType_Unspecified {
+							panic(errors.WithMessagef(xerror.Configure, "method name:%v shard key field type not set", methodName))
+						}
+					default:
+						panic(errors.WithMessagef(xerror.Configure, "method name:%v load balance policy not supported: %v", methodName, newOpt.LoadBalancePolicy))
+					}
 					GMethodOptions[methodName] = &newOpt
 				} else if method.IsStreamingClient() && method.IsStreamingServer() { // stream - 双向流
 				} else {

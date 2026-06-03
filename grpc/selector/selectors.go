@@ -38,10 +38,15 @@ var (
 	int64Selectors  = newSelectors[int64]()
 	uint32Selectors = newSelectors[uint32]()
 	uint64Selectors = newSelectors[uint64]()
+	noShardSelector = newSelectors[uint32]()
 )
 
 // Init initializes the selectors for different key types.
 func Init() {
+	first := newFirst[uint32]()
+	random := newRandom[uint32]()
+	roundRobin := newRoundRobin[uint32]()
+
 	stringMod := newMod[string]()
 	int32Mod := newMod[int32]()
 	int64Mod := newMod[int64]()
@@ -56,6 +61,12 @@ func Init() {
 
 	for k, v := range xgrpcprotoregistry.GMethodOptions {
 		switch v.LoadBalancePolicy {
+		case xgrpcproto.LoadBalancePolicy_LoadBalancePolicy_First:
+			noShardSelector.MapMgr.Add(k, first)
+		case xgrpcproto.LoadBalancePolicy_LoadBalancePolicy_Random:
+			noShardSelector.MapMgr.Add(k, random)
+		case xgrpcproto.LoadBalancePolicy_LoadBalancePolicy_RoundRobin:
+			noShardSelector.MapMgr.Add(k, roundRobin)
 		case xgrpcproto.LoadBalancePolicy_LoadBalancePolicy_Mod:
 			switch v.ShardKeyFieldType {
 			case xgrpcproto.ShardKeyFieldType_ShardKeyFieldType_STRING:
@@ -86,6 +97,8 @@ func Init() {
 			default:
 				panic(errors.WithMessagef(xerror.NotSupport, "shard key type %s not support for method %s", v.ShardKeyFieldType, k))
 			}
+		case xgrpcproto.LoadBalancePolicy_LoadBalancePolicy_Direct:
+			continue
 		default:
 			panic(errors.WithMessagef(xerror.NotSupport, "load balance type %s not support for method %s", v, k))
 		}

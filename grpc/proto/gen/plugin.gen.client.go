@@ -133,6 +133,22 @@ func clientUnaryGenerateMethod(g *protogen.GeneratedFile, service *protogen.Serv
 	mn := method.GoName
 	shardKeyField := findShardKeyField(method.Input)
 	g.P("func (p *", clientName, ") ", mn, "(ctx ", contextPackage.Ident("Context"), ", in *", method.Input.GoIdent, ", opts ...", grpcPackage.Ident("CallOption"), ") (*", method.Output.GoIdent, ", error) {")
+	if isDirectMethod(service, method) {
+		g.P("\treturn p.Client.", mn, "(ctx, in, opts...)")
+		g.P("}")
+		return
+	}
+	if isNoShardSelectorMethod(service, method) {
+		fullMethodName := sn + "_" + mn + "_FullMethodName"
+		g.P("\tctx, grpcConn, err := ", xgrpcselectorPackage.Ident("SelNoShard"), "(ctx, ", fullMethodName, ")")
+		g.P("\tif err != nil {")
+		g.P("\t\treturn nil, ", errorsPackage.Ident("WithMessage"), "(err, ", xruntimePackage.Ident("Location"), "())")
+		g.P("\t}")
+		g.P("\tx := New", sn, "Client(grpcConn)")
+		g.P("\treturn x.", mn, "(ctx, in, opts...)")
+		g.P("}")
+		return
+	}
 	if shardKeyField != nil {
 		g.P("\tshardKeyValue, err := in.Get_XShardKey()")
 		g.P("\tif err != nil {")
