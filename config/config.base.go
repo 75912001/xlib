@@ -1,12 +1,13 @@
 package config
 
 import (
+	"math"
+	"runtime"
+
 	xconfigconstants "github.com/75912001/xlib/config/constants"
 	xerror "github.com/75912001/xlib/error"
 	xruntime "github.com/75912001/xlib/runtime"
 	"github.com/pkg/errors"
-	"math"
-	"runtime"
 )
 
 type Base struct {
@@ -18,7 +19,7 @@ type Base struct {
 	PprofHttpPort               *uint16                          `yaml:"pprofHttpPort"`               // pprof性能分析 http端口		[default]: nil 不使用
 	GoMaxProcess                *int                             `yaml:"goMaxProcess"`                // [default]: runtime.NumCPU()
 	PacketLengthMax             *uint32                          `yaml:"packetLengthMax"`             // bytes,用户 上行 每个包的最大长度		[default]: math.MaxUint32
-	SendChannelCapacity         *uint32                          `yaml:"sendChannelCapacity"`         // bytes,每个链接的发送chan容量		[default]: 1000000
+	SendChannelCapacity         *uint32                          `yaml:"sendChannelCapacity"`         // bytes,每个链接的发送chan容量		[default]: 1024
 	RunMode                     *uint32                          `yaml:"runMode"`                     // 运行模式 [0:release 1:debug]		[default]: 1
 	AvailableLoad               *uint32                          `yaml:"availableLoad"`               // 可用资源数		[default]: 1000000
 	PacketLimitRecvCntPreSecond *uint32                          `yaml:"packetLimitRecvCntPreSecond"` // 每秒接收包数限制		[default]: math.MaxUint32
@@ -54,7 +55,7 @@ func (p *Base) Configure() error {
 		p.PacketLengthMax = &defaultValue
 	}
 	if p.SendChannelCapacity == nil {
-		defaultValue := uint32(1000000)
+		defaultValue := uint32(1024)
 		p.SendChannelCapacity = &defaultValue
 	}
 	if p.RunMode == nil {
