@@ -23,7 +23,7 @@ type Base struct {
 	RunMode                     *uint32                          `yaml:"runMode"`                     // 运行模式 [0:release 1:debug]		[default]: 1
 	AvailableLoad               *uint32                          `yaml:"availableLoad"`               // 可用资源数		[default]: 1000000
 	PacketLimitRecvCntPreSecond *uint32                          `yaml:"packetLimitRecvCntPreSecond"` // 每秒接收包数限制		[default]: math.MaxUint32
-	ProcessingMode              *xconfigconstants.ProcessingMode `yaml:"processingMode"`              // 处理-模式 [0:bus 1:actor]		[default]: ProcessingModeBus
+	ProcessingMode              *xconfigconstants.ProcessingMode `yaml:"processingMode"`              // 处理-模式 [0:bus 1:actor]		[default]: ProcessingModeActor
 }
 
 func (p *Base) ProcessingModeIsActor() bool {
@@ -71,7 +71,7 @@ func (p *Base) Configure() error {
 		p.PacketLimitRecvCntPreSecond = &defaultValue
 	}
 	if p.ProcessingMode == nil {
-		defaultValue := xconfigconstants.ProcessingModeBus
+		defaultValue := xconfigconstants.ProcessingModeActor
 		p.ProcessingMode = &defaultValue
 	}
 	return nil
