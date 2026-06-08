@@ -3,12 +3,15 @@ package util
 import (
 	cryptorand "crypto/rand"
 	"encoding/binary"
+	"encoding/hex"
+	"math"
+	"math/rand"
+	mathrand "math/rand/v2"
+
 	xerror "github.com/75912001/xlib/error"
 	xruntime "github.com/75912001/xlib/runtime"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"math"
-	mathrand "math/rand/v2"
 )
 
 // ============================================
@@ -196,6 +199,15 @@ func SecureRandomString(length uint32) string {
 		result[i] = charset[secureRandomIndex(charsetLen)]
 	}
 	return string(result)
+}
+
+// RandomHex32 生成32字节随机十六进制字符串
+func RandomHex32() (string, error) {
+	var data [32]byte
+	if _, err := rand.Read(data[:]); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(data[:]), nil
 }
 
 // SecureRandomInt64 生成密码学安全的64位随机整数
