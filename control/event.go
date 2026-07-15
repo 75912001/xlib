@@ -7,5 +7,5 @@ type Event struct {
 
 // IOut 接口 导出
 type IOut interface {
-	Send(events ...any)
+	Send(events ...any) error
 }

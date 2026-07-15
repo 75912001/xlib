@@ -333,12 +333,14 @@ func (p *Etcd) GetPrefixIntoChan() (err error) {
 			}
 		}
 		if cb != nil {
-			p.options.iOut.Send(
+			if err := p.options.iOut.Send(
 				&xcontrol.Event{
 					ISwitch:   xcontrol.NewSwitchButton(true),
 					ICallBack: cb,
 				},
-			)
+			); err != nil {
+				return errors.WithMessage(err, xruntime.Location())
+			}
 		}
 	}
 	return
@@ -398,12 +400,15 @@ func (p *Etcd) WatchPrefixIntoChan() (err error) {
 					}
 				}
 				if cb != nil {
-					p.options.iOut.Send(
+					if err := p.options.iOut.Send(
 						&xcontrol.Event{
 							ISwitch:   xcontrol.NewSwitchButton(true),
 							ICallBack: cb,
 						},
-					)
+					); err != nil {
+						xlog.PrintfErr("etcd watch send event err:%v", err)
+						return
+					}
 				}
 			}
 		}

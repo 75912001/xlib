@@ -107,12 +107,17 @@ func (p *Server) handleConn(conn *net.TCPConn, iOut xcontrol.IOut) {
 	if xconfig.GConfigMgr.Base.ProcessingModeIsActor() {
 		_ = p.IHandler.OnConnect(remote)
 	} else {
-		iOut.Send(
+		if err := iOut.Send(
 			&xnetcommon.Connect{
 				IHandler: p.IHandler,
 				IRemote:  remote,
 			},
-		)
+		); err != nil {
+			xlog.PrintfErr("send connect event err:%v", err)
+			remote.SetDisconnectReason(xnetcommon.DisconnectReasonServerShutdown)
+			remote.Stop()
+			return
+		}
 	}
 	remote.Start(&p.options.ConnOptions, iOut, p.IHandler)
 }

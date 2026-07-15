@@ -109,7 +109,11 @@ func (p *Server) handleWebSocket(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	remote := p.handleConn(conn, p.options.iOut)
+	remote, err := p.handleConn(conn, p.options.iOut)
+	if err != nil {
+		xlog.PrintfErr("handle websocket connection err:%v", err)
+		return
+	}
 	defer func() {
 		if xruntime.IsRelease() {
 			if r := recover(); r != nil {
@@ -119,12 +123,14 @@ func (p *Server) handleWebSocket(w http.ResponseWriter, req *http.Request) {
 		if xconfig.GConfigMgr.Base.ProcessingModeIsActor() {
 			_ = p.IHandler.OnDisconnect(remote)
 		} else {
-			p.options.iOut.Send(
+			if err := p.options.iOut.Send(
 				&xnetcommon.Disconnect{
 					IHandler: p.IHandler,
 					IRemote:  remote,
 				},
-			)
+			); err != nil {
+				xlog.PrintfErr("send disconnect event err:%v", err)
+			}
 		}
 		_ = conn.Close()
 	}()
@@ -162,18 +168,22 @@ func (p *Server) handleWebSocket(w http.ResponseWriter, req *http.Request) {
 		if xconfig.GConfigMgr.Base.ProcessingModeIsActor() {
 			_ = p.IHandler.OnPacket(remote, packet)
 		} else {
-			p.options.iOut.Send(
+			if err = p.options.iOut.Send(
 				&xnetcommon.Packet{
 					IHandler: p.IHandler,
 					IRemote:  remote,
 					IPacket:  packet,
 				},
-			)
+			); err != nil {
+				xlog.PrintfErr("send packet event err:%v", err)
+				remote.SetDisconnectReason(xnetcommon.DisconnectReasonServerShutdown)
+				break
+			}
 		}
 	}
 }
 
-func (p *Server) handleConn(conn *websocket.Conn, iOut xcontrol.IOut) *Remote {
+func (p *Server) handleConn(conn *websocket.Conn, iOut xcontrol.IOut) (*Remote, error) {
 	remote := NewRemote(conn, make(chan any, *p.options.sendChanCapacity))
 	if p.options.NewPacketLimitFunc != nil {
 		remote.PacketLimit = p.options.NewPacketLimitFunc(p.options.MaxCntPerSec)
@@ -181,13 +191,17 @@ func (p *Server) handleConn(conn *websocket.Conn, iOut xcontrol.IOut) *Remote {
 	if xconfig.GConfigMgr.Base.ProcessingModeIsActor() {
 		_ = p.IHandler.OnConnect(remote)
 	} else {
-		iOut.Send(
+		if err := iOut.Send(
 			&xnetcommon.Connect{
 				IHandler: p.IHandler,
 				IRemote:  remote,
 			},
-		)
+		); err != nil {
+			remote.SetDisconnectReason(xnetcommon.DisconnectReasonServerShutdown)
+			remote.Stop()
+			return nil, pkgerrors.WithMessagef(err, "send connect event err. %v", xruntime.Location())
+		}
 	}
 	remote.Start(&p.options.ConnOptions, iOut, p.IHandler)
-	return remote
+	return remote, nil
 }

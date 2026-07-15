@@ -197,12 +197,14 @@ func (p *defaultTimer) scanMillisecond(ms int64) {
 				continue
 			}
 			if t.expire <= ms {
-				t.IOut.Send(
+				if err := t.IOut.Send(
 					&xcontrol.Event{
 						ISwitch:   t.ISwitchButton,
 						ICallBack: t.ICallBack,
 					},
-				)
+				); err != nil {
+					xlog.PrintfErr("timer send millisecond event err:%v", err)
+				}
 				next = e.Next()
 				p.millisecondList.Remove(e)
 				p.millisecondCount--
@@ -222,12 +224,14 @@ func (p *defaultTimer) scanMillisecond(ms int64) {
 				break // 堆顶未到期，后面都不会到期
 			}
 			heap.Pop(p.milliTaskHeap) // 弹出到期任务
-			milliTask.millisecond.IOut.Send(
+			if err := milliTask.millisecond.IOut.Send(
 				&xcontrol.Event{
 					ISwitch:   milliTask.millisecond.ISwitchButton,
 					ICallBack: milliTask.millisecond.ICallBack,
 				},
-			)
+			); err != nil {
+				xlog.PrintfErr("timer send millisecond event err:%v", err)
+			}
 			p.millisecondCount--
 		}
 	}
@@ -287,12 +291,14 @@ func (p *defaultTimer) scanSecond(timestamp int64) {
 			continue
 		}
 		if t.expire <= timestamp {
-			t.IOut.Send(
+			if err := t.IOut.Send(
 				&xcontrol.Event{
 					ISwitch:   t.ISwitchButton,
 					ICallBack: t.ICallBack,
 				},
-			)
+			); err != nil {
+				xlog.PrintfErr("timer send second event err:%v", err)
+			}
 			next = e.Next()
 			cycle0.Remove(e)
 			p.secondCount--
@@ -315,12 +321,14 @@ func (p *defaultTimer) scanSecond(timestamp int64) {
 				continue
 			}
 			if t.expire <= timestamp {
-				t.IOut.Send(
+				if err := t.IOut.Send(
 					&xcontrol.Event{
 						ISwitch:   t.ISwitchButton,
 						ICallBack: t.ICallBack,
 					},
-				)
+				); err != nil {
+					xlog.PrintfErr("timer send second event err:%v", err)
+				}
 				next = e.Next()
 				c.Remove(e)
 				p.secondCount--

@@ -9,6 +9,10 @@ import (
 )
 
 func (p *Actor[KEY]) stop(msg *Msg) (resp any, err error) {
+	p.lifecycleMu.Lock()
+	defer p.lifecycleMu.Unlock()
+
+	p.state.CompareAndSwap(StateRunning, StateStopping)
 	p.childMgr.Foreach(func(key KEY, child *Actor[KEY]) bool { // 停止所有子 Actor
 		if msg.IsSync() { // 同步
 			_, _ = child.SendMsgSync(
@@ -24,6 +28,7 @@ func (p *Actor[KEY]) stop(msg *Msg) (resp any, err error) {
 	p.childMgr.Clear()
 	// 停止自己的消息管理器
 	p.msgMgr.Stop()
+	p.state.CompareAndSwap(StateStopping, StateStopped)
 	return nil, nil
 }
 

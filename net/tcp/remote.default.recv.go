@@ -23,12 +23,14 @@ func (p *Remote) onRecvLengthFirst(ctx context.Context, iOut xcontrol.IOut, hand
 		if xconfig.GConfigMgr.Base.ProcessingModeIsActor() {
 			_ = handler.OnDisconnect(p)
 		} else {
-			iOut.Send(
+			if err := iOut.Send(
 				&xnetcommon.Disconnect{
 					IHandler: handler,
 					IRemote:  p,
 				},
-			)
+			); err != nil {
+				xlog.PrintfErr("send disconnect event err:%v", err)
+			}
 		}
 
 		xlog.PrintInfo(xerror.GoroutineDone, p)
@@ -74,13 +76,17 @@ func (p *Remote) onRecvLengthFirst(ctx context.Context, iOut xcontrol.IOut, hand
 		if xconfig.GConfigMgr.Base.ProcessingModeIsActor() {
 			_ = handler.OnPacket(p, packet)
 		} else {
-			iOut.Send(
+			if err := iOut.Send(
 				&xnetcommon.Packet{
 					IHandler: handler,
 					IRemote:  p,
 					IPacket:  packet,
 				},
-			)
+			); err != nil {
+				xlog.PrintfErr("send packet event err:%v", err)
+				p.SetDisconnectReason(xnetcommon.DisconnectReasonServerShutdown)
+				return
+			}
 		}
 	}
 }
@@ -95,12 +101,14 @@ func (p *Remote) onRecvMessageIDFirst(ctx context.Context, iOut xcontrol.IOut, h
 		if xconfig.GConfigMgr.Base.ProcessingModeIsActor() {
 			_ = handler.OnDisconnect(p)
 		} else {
-			iOut.Send(
+			if err := iOut.Send(
 				&xnetcommon.Disconnect{
 					IHandler: handler,
 					IRemote:  p,
 				},
-			)
+			); err != nil {
+				xlog.PrintfErr("send disconnect event err:%v", err)
+			}
 		}
 
 		xlog.PrintInfo(xerror.GoroutineDone, p)
@@ -180,13 +188,17 @@ func (p *Remote) onRecvMessageIDFirst(ctx context.Context, iOut xcontrol.IOut, h
 		if xconfig.GConfigMgr.Base.ProcessingModeIsActor() {
 			_ = handler.OnPacket(p, packet)
 		} else {
-			iOut.Send(
+			if err := iOut.Send(
 				&xnetcommon.Packet{
 					IHandler: handler,
 					IRemote:  p,
 					IPacket:  packet,
 				},
-			)
+			); err != nil {
+				xlog.PrintfErr("send packet event err:%v", err)
+				p.SetDisconnectReason(xnetcommon.DisconnectReasonServerShutdown)
+				return
+			}
 		}
 
 	}
@@ -202,12 +214,14 @@ func (p *Remote) onRecvLengthFirst_WithoutLength(ctx context.Context, iOut xcont
 		if xconfig.GConfigMgr.Base.ProcessingModeIsActor() {
 			_ = handler.OnDisconnect(p)
 		} else {
-			iOut.Send(
+			if err := iOut.Send(
 				&xnetcommon.Disconnect{
 					IHandler: handler,
 					IRemote:  p,
 				},
-			)
+			); err != nil {
+				xlog.PrintfErr("send disconnect event err:%v", err)
+			}
 		}
 
 		xlog.PrintInfo(xerror.GoroutineDone, p)
@@ -253,13 +267,17 @@ func (p *Remote) onRecvLengthFirst_WithoutLength(ctx context.Context, iOut xcont
 		if xconfig.GConfigMgr.Base.ProcessingModeIsActor() {
 			_ = handler.OnPacket(p, packet)
 		} else {
-			iOut.Send(
+			if err := iOut.Send(
 				&xnetcommon.Packet{
 					IHandler: handler,
 					IRemote:  p,
 					IPacket:  packet,
 				},
-			)
+			); err != nil {
+				xlog.PrintfErr("send packet event err:%v", err)
+				p.SetDisconnectReason(xnetcommon.DisconnectReasonServerShutdown)
+				return
+			}
 		}
 	}
 }

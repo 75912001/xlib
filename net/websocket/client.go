@@ -67,12 +67,14 @@ func (p *Client) Connect(ctx context.Context, opts ...*ConnectOptions) error {
 			if xconfig.GConfigMgr.Base.ProcessingModeIsActor() {
 				_ = p.IHandler.OnDisconnect(remote)
 			} else {
-				opt.iOut.Send(
+				if err := opt.iOut.Send(
 					&xnetcommon.Disconnect{
 						IHandler: p.IHandler,
 						IRemote:  remote,
 					},
-				)
+				); err != nil {
+					xlog.PrintfErr("send disconnect event err:%v", err)
+				}
 			}
 			_ = conn.Close()
 		}()
@@ -110,13 +112,17 @@ func (p *Client) Connect(ctx context.Context, opts ...*ConnectOptions) error {
 			if xconfig.GConfigMgr.Base.ProcessingModeIsActor() {
 				_ = p.IHandler.OnPacket(remote, packet)
 			} else {
-				opt.iOut.Send(
+				if err := opt.iOut.Send(
 					&xnetcommon.Packet{
 						IHandler: p.IHandler,
 						IRemote:  remote,
 						IPacket:  packet,
 					},
-				)
+				); err != nil {
+					xlog.PrintfErr("send packet event err:%v", err)
+					remote.SetDisconnectReason(xnetcommon.DisconnectReasonServerShutdown)
+					break
+				}
 			}
 		}
 	}()
