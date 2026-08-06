@@ -1,5 +1,11 @@
 # grpc
 
+## 消息大小限制
+
+服务端创建时通过 `grpc.maxReceiveMessageBytes` 和 `grpc.maxSendMessageBytes` 设置接收、发送上限. `protoc-gen-go-grpc-x` 生成的客户端连接也会读取同一组配置, 分别设置客户端接收、发送上限.
+
+通信双方都必须允许目标消息大小. 例如 A 向 B 发送 64MiB 以内的消息时, A 的发送上限和 B 的接收上限都必须至少为 67108864 bytes. 建议同一套服务统一配置这两个字段, 避免不同调用方向出现不对称限制.
+
 # 路由功能
 ## 使用片键 shardkey, 通过不同的 loadblance policy, 路由到 service.
 ### 1. serverkey → IClientConn (1:1)

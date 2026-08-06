@@ -9,6 +9,7 @@ const (
 	contextPackage               = protogen.GoImportPath("context")
 	grpcPackage                  = protogen.GoImportPath("google.golang.org/grpc")
 	errorsPackage                = protogen.GoImportPath("github.com/pkg/errors")
+	xconfigPackage               = protogen.GoImportPath("github.com/75912001/xlib/config")
 	xruntimePackage              = protogen.GoImportPath("github.com/75912001/xlib/runtime")
 	xgrpcprotoPackage            = protogen.GoImportPath("github.com/75912001/xlib/grpc/proto")
 	xgrpcselectorPackage         = protogen.GoImportPath("github.com/75912001/xlib/grpc/selector")

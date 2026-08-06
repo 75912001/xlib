@@ -33,6 +33,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/xdg-go/pbkdf2"
 	"github.com/xtaci/kcp-go/v5"
+	"google.golang.org/grpc"
 )
 
 type Server struct {
@@ -123,7 +124,10 @@ func (p *Server) PreStart(ctx context.Context, opts ...*Options) error {
 	xgrpcselector.Init()
 	// grpc 服务
 	if xconfig.GConfigMgr.Grpc.IsEnabled() {
-		p.GRPCServer = xgrpc.NewServer()
+		p.GRPCServer = xgrpc.NewServer(
+			grpc.MaxRecvMsgSize(xconfig.GConfigMgr.Grpc.GetMaxReceiveMessageBytes()),
+			grpc.MaxSendMsgSize(xconfig.GConfigMgr.Grpc.GetMaxSendMessageBytes()),
+		)
 	}
 
 	p.actor.Start()

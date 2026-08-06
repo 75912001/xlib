@@ -18,14 +18,15 @@ type Server struct {
 }
 
 // NewServer 创建GRPC服务器
-func NewServer() *Server {
-	return &Server{
-		GrpcServer: grpc.NewServer(
-			grpc.ChainUnaryInterceptor(
-				xgrpcprotointerceptor.ShardKeyServerInterceptor(),
-				xgrpcprotointerceptor.TraceServerInterceptor(),
-			),
+func NewServer(opts ...grpc.ServerOption) *Server {
+	opts = append([]grpc.ServerOption{
+		grpc.ChainUnaryInterceptor(
+			xgrpcprotointerceptor.ShardKeyServerInterceptor(),
+			xgrpcprotointerceptor.TraceServerInterceptor(),
 		),
+	}, opts...)
+	return &Server{
+		GrpcServer: grpc.NewServer(opts...),
 	}
 }
 
